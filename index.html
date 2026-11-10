@@ -502,11 +502,11 @@ function renderStrategies(d, body){
   /* -- 指星(主仓中长期; sim为模拟盘磨合) -- */
   const z=d.zhixing||{};
   const zsim=(z.buy||[]).concat(z.sell||[],z.hold||[]).some(e=>e.is_sim);
-  body.appendChild(el('div','tier','1 指星 · '+(zsim?'模拟盘(指星/燎原磨合)':'主仓中长期')+(d._meta&&d._meta.zhixing?(' · 🕐 '+fmtTS(d._meta.zhixing)):''),0));
+  body.appendChild(el('div','tier','1 指星 · '+(zsim?'模拟盘(指星磨合)':'主仓中长期')+(d._meta&&d._meta.zhixing?(' · 🕐 '+fmtTS(d._meta.zhixing)):''),0));
   body.appendChild(el('div','study-note',stratDesc('指星'),0));
   const c1=el('div','card');
   if(!z.buy&&!z.summary){c1.appendChild(el('div','study-note','当日指星推荐未生成。',0))}
-  if(z.buy&&z.buy.length){c1.appendChild(el('div','tier',(zsim?'🟢 模拟盘·推荐买入':'🟢 推荐买入'),0));z.buy.forEach(it=>{const h='<div class="top"><span class="nm">'+(NM(it.name,it.code))+'</span>'+bp(it.code)+'<span class="tag ok">'+(it.is_sim?'模拟盘买入':'买入')+'</span>'+(it.strategy?('<span class="pill">'+it.strategy+'</span>'):'')+minibtn(it.code,it.name,0,'指星')+'</div><div class="why">'+(it.verdict||it.trigger||'')+'</div>';c1.appendChild(el('div','sitem',h))})}
+  if(z.buy&&z.buy.length){c1.appendChild(el('div','tier',(zsim?'🟢 模拟盘·推荐买入':'🟢 推荐买入'),0));z.buy.forEach(it=>{const h='<div class="top"><span class="nm">'+(NM(it.name,it.code))+'</span>'+bp(it.code)+'<span class="tag ok">'+(it.is_sim?'模拟盘买入':'买入')+'</span><span class="pill" style="color:var(--gold);font-weight:700" title="战法归属·来自指星引擎">指星</span>'+minibtn(it.code,it.name,0,'指星')+'</div><div class="why">'+(it.verdict||it.trigger||'')+'</div>';c1.appendChild(el('div','sitem',h))})}
   body.appendChild(c1);
   /* -- 燎原(长期低频) -- */
   body.appendChild(el('div','tier','2 燎原 · 长期低频(30天)'+(d._meta&&d._meta.liaoyuan?(' · 🕐 '+fmtTS(d._meta.liaoyuan)):''),0));
@@ -516,7 +516,7 @@ function renderStrategies(d, body){
   if(ly.buy_signal){
     const s=ly.buy_signal;
     const ret=retOf(d,s.code,s.price);
-    c2.appendChild(el('div','sitem',`<div class="top"><span class="nm">${s.code}</span>${bp(s.code)}<span class="tag ok">买入信号</span>${minibtn(s.code,'',s.price,'燎原')}<span class="pill">价格 ${s.price}</span><span class="pill">rfl ${s.rfl}</span><span class="pill">预测30日 ${s.pred_ret30}</span><span class="pill">量 ${s.amount_亿}亿</span></div><div class="why">${isOwner()?('现金 '+ly.cash_left+' · 持仓上限 '+ly.maxpos+(ly.funds?('份/'+ly.funds):'')):''}${ret!=null?(' · 最新价 <b>'+(d.ret||{})[String(s.code).slice(-6)].price+'</b> <span class="'+(ret>0?'up':'down')+'">'+fmtp(ret)+'</span>(自推荐)'):''}</div>`));
+    c2.appendChild(el('div','sitem',`<div class="top"><span class="nm">${s.code}</span>${bp(s.code)}<span class="pill" style="color:var(--gold);font-weight:700" title="战法归属·来自燎原引擎">燎原</span><span class="tag ok">买入信号</span>${minibtn(s.code,'',s.price,'燎原')}<span class="pill">价格 ${s.price}</span><span class="pill">rfl ${s.rfl}</span><span class="pill">预测30日 ${s.pred_ret30}</span><span class="pill">量 ${s.amount_亿}亿</span></div><div class="why">${isOwner()?('现金 '+ly.cash_left+' · 持仓上限 '+ly.maxpos+(ly.funds?('份/'+ly.funds):'')):''}${ret!=null?(' · 最新价 <b>'+(d.ret||{})[String(s.code).slice(-6)].price+'</b> <span class="'+(ret>0?'up':'down')+'">'+fmtp(ret)+'</span>(自推荐)'):''}</div>`));
   }
   if(ly.buy_rank_top5&&ly.buy_rank_top5.length){
     c2.appendChild(el('div','tier','浓缩池 Top5',0));
@@ -529,7 +529,7 @@ function renderStrategies(d, body){
   }
   if(ly.sell_signals&&ly.sell_signals.length){
     c2.appendChild(el('div','tier','🔴 卖出信号',0));
-    ly.sell_signals.forEach(s=>c2.appendChild(el('div','sitem',`<div class="top"><span class="nm">${NM(s.name,s.code)}</span>${s.is_sim?'<span class="pill">模拟盘</span>':''}<span class="tag bad">卖出</span></div><div class="why">${s.why||''} · 收益 ${(s.ret!=null?fmtp(s.ret*100):'-')}</div>`)));
+    ly.sell_signals.forEach(s=>c2.appendChild(el('div','sitem',`<div class="top"><span class="nm">${NM(s.name,s.code)}</span>${s.is_sim?'<span class="pill">模拟盘</span>':''}<span class="pill" style="color:var(--gold);font-weight:700">燎原</span><span class="tag bad">卖出</span></div><div class="why">${s.why||''} · 收益 ${(s.ret!=null?fmtp(s.ret*100):'-')}</div>`)));
   }
   if(!ly.buy_signal&&!(ly.buy_rank_top5||[]).length)c2.appendChild(el('div','study-note','燎原为长期低频战法,当日无新买入信号。',0));
   body.appendChild(c2);
