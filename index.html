@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.20 (2026-11-10)
+     yunyu-stock · 语之策略 v1.0.21 (2026-11-10)
      数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
      分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
      登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
@@ -271,7 +271,9 @@ function stratDesc(k){const m={'指星':'主仓中长期 · 全市场尖峰模�
 /* -- 自选股跟踪(每用户) -- */
 /* 折叠开关: 点击切换下一个兄弟容器显隐 */
 function toggleList(btn){
-  const box=btn.nextElementSibling;if(!box)return;
+  let box=btn.nextElementSibling;
+  if(!box&&btn.parentElement)box=btn.parentElement.nextElementSibling;  // 按钮被包在wrapper div里时, 找wrapper的下一个兄弟
+  if(!box)return;
   const open=box.style.display!=='none';
   box.style.display=open?'none':'block';
   btn.textContent=(open?'▸ ':'▾ ')+btn.getAttribute('data-t');
@@ -745,7 +747,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.20</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.21</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -754,6 +756,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.21','11-10','修复折叠块点不开: toggleList找按钮兄弟节点, 但按钮被包在wrapper div里找不到内容盒, 兼容两种挂法(历史深度复盘/体系推荐复盘/已平仓等全部修复)'],
     ['v1.0.20','11-10','历史深度复盘补全: 之前只抓复盘_*漏了29篇深度复盘_*, 现共64篇(8-04起, 含胜败总结/深度归因/交付报告/完整范围基准)'],
     ['v1.0.19','11-10','复盘Tab补上日期选择条(前一曰/后一日+下拉, 与历史Tab同款): 之前JS有rvDate逻辑但HTML没放选择器, 复盘只能看最新一天'],
     ['v1.0.18','11-10','持仓复盘加每只走势分析(依托SDM板块体系: 个股驱动+一级二级三级板块链+状态标记), 每晚快照同步写入; 每晚23:30给每用户生成当日持仓复盘快照; 主账号挂入32篇历史深度复盘; 修复save覆盖后端字段'],
