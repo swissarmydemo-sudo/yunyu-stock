@@ -225,6 +225,13 @@ const OWNER_EMAIL='frankdyuan@petalmail.com';
 function isOwner(){return authed&&DBUSER&&String(DBUSER.email||'').toLowerCase()===OWNER_EMAIL}
 function stratDesc(k){const m={'指星':'主仓中长期 · 全市场尖峰模型打分选股,叠加板块/支撑加分 · 过顶卖、反弹接回 · 持有周~数月,止损约-10%','燎原':'长期低频 · 沪深主板浓缩池,动量+资金启动 · 约持30天,5份滚动 · 硬扛不设止损','破晓':'隔日超短 · T尾盘买入、T1开盘卖出 · 冲高+1%止盈、-0.5%回撤卖 · 低迷场景空仓','打新':'新股申购 · 主板/创业板/科创板打新 · 中签上市后卖出','ETF':'主题方向 · 按板块强弱信号选ETF,仅供方向参考'};return m[k]||''}
 /* -- 自选股跟踪(每用户) -- */
+/* 折叠开关: 点击切换下一个兄弟容器显隐 */
+function toggleList(btn){
+  const box=btn.nextElementSibling;if(!box)return;
+  const open=box.style.display!=='none';
+  box.style.display=open?'none':'block';
+  btn.textContent=(open?'▸ ':'▾ ')+btn.getAttribute('data-t');
+}
 function renderWatch(d){
   const b=$('watchBody');b.innerHTML='';
   b.appendChild(sectH3('🎒 我的仓位 · 跟踪买卖与盈亏', d, 'ret'));
@@ -235,7 +242,12 @@ function renderWatch(d){
     b.appendChild(el('div','tier','🏦 真实持仓 · 体系自动对接(只读)('+(aopen.length+aclosed.length)+')',0));
     if(aopen.length||aclosed.length){
       aopen.forEach(h=>renderAutoH(b,d,h));
-      if(aclosed.length){b.appendChild(el('div','study-note','— 已平仓/清零 '+aclosed.length+' 只 —',0));aclosed.forEach(h=>renderAutoH(b,d,h,true))}
+      if(aclosed.length){
+        b.appendChild(el('div','',`<button class="btn ghost" style="margin:6px 0;font-size:11px;padding:4px 10px" onclick="toggleList(this)" data-t="已平仓/清零 ${aclosed.length} 只">▸ 已平仓/清零 ${aclosed.length} 只</button>`));
+        const box=el('div','');box.style.display='none';
+        aclosed.forEach(h=>renderAutoH(box,d,h,true));
+        b.appendChild(box);
+      }
       b.appendChild(el('div','study-note','由体系每晚自动同步真实持仓(兴业/东财); 只读, 不受手动自选影响。',0));
     }else b.appendChild(el('div','study-note','体系尚未同步真实持仓(同步脚本未跑或今日无持仓)。',0));
   }
@@ -256,27 +268,30 @@ function renderWatch(d){
       b.appendChild(el('div','sitem',`<div class="top"><span class="nm">${h.name||h.code}</span>${bp(h.code)}<span class="board">${h.strat||'自选'}</span>${h.cost?('<span class="pill">买价 '+h.cost+'</span>'):''}${h.buy_time?('<span class="pill">买时 '+h.buy_time+'</span>'):''}${cur?('<span class="pill">现价 '+cur+'</span>'):''}${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}<span class="minibtn" onclick="delHolding('${h.code}')">✕</span></div>${advice?('<div class="why">💡 '+advice+'</div>'):''}<div style="margin-top:6px">${q&&q.price?('<button class="btn ghost" style="font-size:11px;padding:3px 9px" onclick="settleHolding(\''+h.code+'\',\''+String(q.price)+'\')">卖出@'+cur+'</button>'):''}</div>`));
     });
   }else b.appendChild(el('div','study-note','还没有持仓中自选股。',0));
-  /* 已平仓·复盘 */
+  /* 已平仓·复盘(可折叠) */
   if(closed.length){
-    b.appendChild(el('div','tier','🏁 已平仓 · 复盘 ('+closed.length+')',0));
+    b.appendChild(el('div','',`<button class="btn ghost" style="margin:4px 0;font-size:11px;padding:4px 10px" onclick="toggleList(this)" data-t="🏁 已平仓 · 复盘 (${closed.length})">▸ 🏁 已平仓 · 复盘 (${closed.length})</button>`));
+    const box=el('div','');box.style.display='none';
     closed.forEach(h=>{
       const pnl=(h.cost&&h.sell_price)?((h.sell_price-h.cost)/h.cost*100):null;
-      b.appendChild(el('div','sitem',`<div class="top"><span class="nm">${h.name||h.code}</span>${bp(h.code)}<span class="board">${h.strat||''}</span><span class="pill">买 ${h.cost}</span><span class="pill">卖 ${h.sell_price}</span><span class="pill">卖时 ${h.sell_time||''}</span>${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}<span class="minibtn" onclick="delHolding('${h.code}')">✕</span></div>`));
+      box.appendChild(el('div','sitem',`<div class="top"><span class="nm">${h.name||h.code}</span>${bp(h.code)}<span class="board">${h.strat||''}</span><span class="pill">买 ${h.cost}</span>${h.sell_price?('<span class="pill ok">卖 '+h.sell_price+'</span>'):''}<span class="pill">${h.sell_time||''}</span>${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}<span class="minibtn" onclick="delHolding('${h.code}')">✕</span></div>`));
     });
+    b.appendChild(box);
   }
   /* 表单绑定 */
   setTimeout(()=>{const a=$('wAdd');if(a)a.onclick=()=>{const c=$('wCode').value.trim(),n=$('wName').value.trim(),s=$('wStrat').value,p=$('wPrice').value.trim(),da=$('wDate').value.trim(),sh=$('wShares').value.trim();const c6=c.replace(/\D/g,'').slice(-6);if(c6.length!==6){toast('请填6位代码');return}const now=new Date();MYH.push({code:c6,name:n||c6,strat:s,shares:(+sh)||0,cost:(+p)||0,buy_time:(da||now.toISOString().slice(0,10)),added:now.toISOString().slice(0,10)});saveHoldings().then(()=>showTab('watch'));toast('已加入自选')}},0);
 }
-/* 主账号真实持仓(自动对接·只读)渲染 */
-function renderAutoH(b,d,h,closed){
+/* 主账号真实持仓(自动对接·只读)渲染; closed=已平仓/清零(折叠显示,按卖出价算实际盈亏) */
+function renderAutoH(cont,d,h,closed){
   const q=(d.ret||{})[h.code];const cur=(q&&q.price)||h.last||0;const cost=h.cost||0;
-  const pnl=(cur&&cost)?((cur-cost)/cost*100):null;
+  const basis=(!closed||!h.sell_price)?cur:(+h.sell_price);
+  const pnl=(basis&&cost)?((basis-cost)/cost*100):null;
   let advice=l1For(d,h);
   if(pnl!=null&&!closed&&(h.shares||0)>0){
     if(pnl<=-10)advice='⚠️ 浮亏 '+fmtp(pnl)+' · 逼近约-10%止损位,盯战法卖点 · '+advice;
     else if(pnl>=12)advice='🏆 '+fmtp(pnl)+' 浮盈 · 关注止盈/离场信号 · '+advice;
   }
-  b.appendChild(el('div','sitem',`<div class="top"><span class="nm">${h.name||h.code}</span>${bp(h.code)}<span class="board">${h.strat||'指星'}</span>${h.acct?('<span class="pill">'+h.acct+'</span>'):''}${(h.shares||0)>0?('<span class="pill">'+h.shares+'股</span>'):''}${cost?('<span class="pill">买价 '+cost+'</span>'):''}${cur?('<span class="pill">现价 '+cur+'</span>'):''}${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}</div>${(advice&&!closed&&(h.shares||0)>0)?('<div class="why">💡 '+advice+'</div>'):''}${closed?('<div class="why">'+(h.sell_price?'已平仓 · 卖 '+h.sell_price+' · '+h.sell_time:'持仓已清零')+'</div>'):''}`));
+  cont.appendChild(el('div','sitem',`<div class="top"><span class="nm">${h.name||h.code}</span>${bp(h.code)}<span class="board">${h.strat||'指星'}</span>${h.acct?('<span class="pill">'+h.acct+'</span>'):''}${(h.shares||0)>0?('<span class="pill">'+h.shares+'股</span>'):''}${cost?('<span class="pill">买价 '+cost+'</span>'):''}${(!closed&&cur)?('<span class="pill">现价 '+cur+'</span>'):''}${(closed&&h.sell_price)?('<span class="pill ok">卖价 '+h.sell_price+'</span>'):''}${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}</div>${(advice&&!closed&&(h.shares||0)>0)?('<div class="why">💡 '+advice+'</div>'):''}${closed?('<div class="why">'+(h.sell_price?'已平仓 · 卖 '+h.sell_price+' · '+h.sell_time:'持仓已清零')+'</div>'):''}`));
 }
 function l1For(d,h){
   const c=h.code;const z=d.zhixing||{};
