@@ -5,48 +5,56 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.8 (2026-11-10)
+     yunyu-stock · 语之策略 v1.0.9 (2026-11-10)
      数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
      分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
      登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
      Tab: 今日/推荐池/自选/(板块SDM独立)/历史/复盘/关于
 ================================================ -->
 <style>
-:root{--gold:#f4a261;--bg:#0f1220;--card:#1b2036;--line:#2a3152;--txt:#e8eaf6;--dim:#9aa0c3;--ok:#2ec4b6;--bad:#ef476f;--accent:#5aa9e6;--jp:#e63946}
+:root{--gold:#f2a25c;--gold2:#ffc76e;--bg:#0d1020;--bg2:#141936;--card:#1a2038;--card2:#1e2542;--line:#2b3357;--line2:#3a446e;--txt:#edf0fb;--dim:#9aa3c7;--ok:#37d7c6;--bad:#f0567e;--accent:#6fb3f0;--shadow:0 14px 40px rgba(0,0,0,.35)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:radial-gradient(1200px 700px at 20% -10%,#1d2340 0%,#0f1220 55%);color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;min-height:100vh;-webkit-tap-highlight-color:transparent}
-.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 70px}
-h1{font-size:24px;letter-spacing:1px}
-h1 small{color:var(--dim);font-weight:400;letter-spacing:0;font-size:12px;display:block;margin-top:4px}
-.topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+html{-webkit-text-size-adjust:100%}
+body{background:radial-gradient(1300px 760px at 18% -12%,#20294d 0%,#12172e 46%,#0b0e1e 100%);color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;min-height:100vh;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.wrap{max-width:1060px;margin:0 auto;padding:18px 16px 76px}
+h1{font-size:23px;letter-spacing:.5px;line-height:1.25;background:linear-gradient(120deg,#fff,#ffe3b8 55%,var(--gold2));-webkit-background-clip:text;background-clip:text;color:transparent}
+h1 small{color:var(--dim);font-weight:400;letter-spacing:.2px;font-size:12px;display:block;margin-top:5px;-webkit-text-fill-color:var(--dim)}
+.topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.card{background:rgba(28,34,64,.55);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 10px 34px rgba(0,0,0,.30);backdrop-filter:blur(10px)}
-.btn{border:1px solid var(--line);background:rgba(20,25,50,.6);color:var(--txt);border-radius:12px;padding:9px 16px;cursor:pointer;font-size:14px;transition:.15s}
-.btn.gold{background:linear-gradient(150deg,#e08a3c,#c96f1e);border-color:#e8a055;color:#1a1206;font-weight:700;box-shadow:0 6px 18px rgba(201,111,30,.35)}
+.card{background:linear-gradient(180deg,rgba(31,38,70,.72),rgba(24,30,55,.58));border:1px solid var(--line);border-top:1px solid var(--line2);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 12px 34px rgba(0,0,0,.32);backdrop-filter:blur(12px);position:relative;transition:box-shadow .2s,border-color .2s}
+.card:hover{border-color:var(--line2);box-shadow:0 16px 44px rgba(0,0,0,.40)}
+.btn{border:1px solid var(--line);background:rgba(22,28,56,.66);color:var(--txt);border-radius:12px;padding:9px 16px;cursor:pointer;font-size:14px;transition:.16s;font-weight:500}
+.btn:hover{border-color:var(--line2);background:rgba(30,38,74,.8);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.gold{background:linear-gradient(150deg,#f0a25c,#df7f28);border-color:#ffc98a;color:#241403;font-weight:700;box-shadow:0 7px 20px rgba(223,127,40,.38)}
+.btn.gold:hover{filter:brightness(1.06)}
 .btn.ghost{color:var(--dim)}
 .btn.acct-btn{margin-left:6px;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
-.nav-tab{display:flex;gap:6px;margin-bottom:16px;background:rgba(20,25,50,.55);border:1px solid var(--line);border-radius:16px;padding:6px;backdrop-filter:blur(8px);overflow-x:auto}
-.nav-tab button{flex:1;white-space:nowrap;border:0;background:transparent;color:var(--dim);padding:9px 10px;border-radius:12px;cursor:pointer;font-size:13.5px;transition:.15s}
-.nav-tab button.on{background:linear-gradient(150deg,rgba(244,162,97,.22),rgba(244,162,97,.08));color:var(--gold);font-weight:700}
+.nav-tab{position:sticky;top:0;z-index:30;display:flex;gap:5px;margin-bottom:16px;background:rgba(14,18,36,.82);border:1px solid var(--line);border-radius:16px;padding:6px;backdrop-filter:blur(14px);overflow-x:auto;box-shadow:0 8px 26px rgba(0,0,0,.28)}
+.nav-tab button{flex:1;white-space:nowrap;border:0;background:transparent;color:var(--dim);padding:9px 11px;border-radius:11px;cursor:pointer;font-size:13.5px;transition:.15s}
+.nav-tab button:hover{color:var(--txt);background:rgba(90,169,230,.08)}
+.nav-tab button.on{background:linear-gradient(150deg,rgba(244,162,97,.26),rgba(244,162,97,.10));color:var(--gold2);font-weight:700;box-shadow:inset 0 0 0 1px rgba(255,199,110,.28)}
 .hidden{display:none}
 .scene-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.scene-tag{font-size:15px;font-weight:800;color:var(--gold);border:1px solid rgba(255,194,75,.45);background:rgba(255,194,75,.10);border-radius:12px;padding:7px 13px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.chip{font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:rgba(15,18,32,.45)}
+.scene-tag{font-size:15px;font-weight:800;color:#ffe1ae;border:1px solid rgba(255,199,110,.5);background:linear-gradient(150deg,rgba(255,199,110,.22),rgba(244,162,97,.08));border-radius:13px;padding:8px 14px;box-shadow:0 4px 14px rgba(244,162,97,.14)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
+.chip{font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:rgba(15,18,32,.5)}
 .chip b{color:var(--txt)}
-h3{font-size:15px;margin:6px 0 10px;padding-left:10px;border-left:3px solid var(--gold);line-height:1.4;text-align:left}
-.slist{display:grid;gap:8px}
-.sitem{background:rgba(26,32,60,.45);border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:13.5px;line-height:1.5}
+h3{font-size:15px;margin:8px 0 11px;padding-left:11px;border-left:3px solid var(--gold);line-height:1.4;text-align:left;font-weight:700;letter-spacing:.3px}
+.slist{display:grid;gap:9px}
+.sitem{background:rgba(27,33,62,.5);border:1px solid var(--line);border-radius:13px;padding:12px 14px;font-size:13.5px;line-height:1.55;transition:border-color .15s,background .15s}
+.sitem:hover{border-color:var(--line2);background:rgba(33,41,76,.55)}
 .sitem .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sitem .nm{font-weight:700}
-.sitem .tag{font-size:11px;border-radius:6px;padding:1px 6px;background:rgba(90,169,230,.16);color:var(--accent)}
+.sitem .tag{font-size:11px;border-radius:7px;padding:2px 7px;background:rgba(90,169,230,.16);color:var(--accent)}
 .sitem .tag.main{background:rgba(244,162,97,.18);color:var(--gold)}
 .sitem .tag.bad{background:rgba(239,71,111,.18);color:var(--bad)}
 .sitem .tag.ok{background:rgba(46,196,182,.18);color:var(--ok)}
-.sitem .why{font-size:12px;color:var(--dim);margin-top:4px}
+.sitem .why{font-size:12px;color:var(--dim);margin-top:5px}
 .sitem .why b{color:var(--txt)}
-.tier{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:1px;margin:16px 0 6px}
-.banner{border-radius:12px;padding:10px 13px;font-size:13px;margin:6px 0}
+.tier{font-size:11.5px;color:var(--gold2);font-weight:700;letter-spacing:1.2px;margin:18px 0 7px;display:flex;align-items:center;gap:7px}
+.tier::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px rgba(244,162,97,.55)}
+.banner{border-radius:13px;padding:11px 14px;font-size:13px;margin:8px 0}
 .banner.warn{border:1px solid rgba(239,71,111,.4);background:rgba(239,71,111,.10);color:#ff9db4}
 .banner.info{border:1px solid rgba(90,169,230,.4);background:rgba(90,169,230,.10);color:#a7d3f7}
 .banner.wait{border:1px solid rgba(244,162,97,.4);background:rgba(244,162,97,.10);color:var(--gold)}
@@ -78,7 +86,7 @@ select{background:var(--card);color:var(--txt);border:1px solid var(--line);bord
 .board{font-size:10px;color:var(--gold);border:1px solid rgba(255,194,75,.35);border-radius:6px;padding:1px 5px;margin-left:6px;vertical-align:middle;white-space:nowrap;flex:none}
 .minibtn{font-size:12px;color:var(--gold);border:1px solid rgba(255,194,75,.4);border-radius:6px;padding:0 6px;cursor:pointer;margin-left:auto;flex:none;background:transparent}
 .minibtn:hover{background:rgba(255,194,75,.15)}
-.fld{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:8px;color:var(--tt);padding:7px 8px;font-size:12px;outline:none;box-sizing:border-box}
+.fld{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:7px 8px;font-size:12px;outline:none;box-sizing:border-box}
 .fld:focus{border-color:rgba(255,194,75,.5)}
 .lockpad{text-align:center;padding:22px 12px}
 .vlog{margin:10px 0 2px;padding-left:14px;border-left:2px solid var(--line)}
@@ -86,6 +94,17 @@ select{background:var(--card);color:var(--txt);border:1px solid var(--line);bord
 .vbadge{flex:none;font-size:11px;font-weight:700;color:var(--gold);border:1px solid rgba(255,194,75,.4);border-radius:8px;padding:2px 7px;background:rgba(255,194,75,.08);min-width:44px;text-align:center}
 .vdate{flex:none;font-size:11px;color:var(--dim);padding-top:3px;width:34px}
 .vtxt{font-size:12.5px;line-height:1.6}
+tr:hover{background:rgba(255,255,255,.025)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#2c3560;border-radius:8px;border:2px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:#3a4474}
+::selection{background:rgba(244,162,97,.32)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.board{background:rgba(244,162,97,.10)}
+.footer-note a{color:var(--accent);text-decoration:none}
+.footer-note a:hover{text-decoration:underline}
+.modal{background:linear-gradient(180deg,rgba(34,42,78,.97),rgba(24,30,55,.97));box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.lockpad .btn{margin-top:8px}
 </style>
 </head>
 <body>
@@ -511,7 +530,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.8</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.9</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -520,6 +539,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.9','11-10','UI 整体优化: 配色层次+渐变标题+吸顶导航+卡片/列表质感+悬停反馈+滚动条/选中/键盘焦点; 修复输入框文字色变量错误'],
     ['v1.0.8','11-10','板块SDM 调整为第2个Tab(今日→SDM→推荐池→自选→历史→复盘→关于)'],
     ['v1.0.7','11-10','ETF 主题方向独立成板块(第5栏), 不再挂在指星推荐下面(修 Frank 反馈) · 今日「我的操作建议」加完整跟踪去自选指针'],
     ['v1.0.6','11-10','操作建议改为<b>按每个账户自己的持仓/自选逐股生成</b>(主账号=自动对接真实持仓, 其他用户=手动自选), 每人不同; 指星目标价(操作区间)归入推荐池(普适); 未登录净屏只留场景+SDM'],
