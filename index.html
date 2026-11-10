@@ -60,6 +60,8 @@ h3{font-size:15px;margin:8px 0 11px;padding-left:11px;border-left:3px solid var(
 .banner.info{border:1px solid rgba(90,169,230,.4);background:rgba(90,169,230,.10);color:#a7d3f7}
 .banner.wait{border:1px solid rgba(244,162,97,.4);background:rgba(244,162,97,.10);color:var(--gold)}
 .pill{font-size:11px;border-radius:6px;padding:2px 7px;background:rgba(154,160,195,.12);color:var(--dim)}
+.slotb{display:inline-block;width:11px;height:11px;border-radius:3px;background:rgba(154,160,195,.16);border:1px solid rgba(154,160,195,.3);margin-left:2px;vertical-align:middle}
+.slotb.on{background:#ffc24b;border-color:#ffc24b}
 .pill.v{background:rgba(239,71,111,.16);color:#ff9db4}
 .pill.s{background:rgba(46,196,182,.16);color:var(--ok)}
 .pill.w{background:rgba(244,162,97,.16);color:var(--gold)}
@@ -314,6 +316,7 @@ function renderWatch(d){
       b.appendChild(el('div','study-note','由体系每晚自动同步东财100万模拟盘持仓; 只读, 与真实仓/自选独立。',0));
     }else b.appendChild(el('div','study-note','模拟盘当前空仓。',0));
   }
+  if(isOwner())renderOwnerSlots(b);
   /* 手动自选 */
   b.appendChild(el('div','tier','📌 我的自选 · 手动跟踪',0));
   /* 加自选表单 */
@@ -355,6 +358,26 @@ function renderAutoH(cont,d,h,closed){
     else if(pnl>=12)advice='🏆 '+fmtp(pnl)+' 浮盈 · 关注止盈/离场信号 · '+advice;
   }
   cont.appendChild(el('div','sitem',`<div class="top"><span class="nm">${NM(h.name,h.code)}</span>${bp(h.code)}<span class="board">${h.strat||'指星'}</span>${h.acct?('<span class="pill">'+h.acct+'</span>'):''}${(h.shares||0)>0?('<span class="pill">'+h.shares+'股</span>'):''}${cost?('<span class="pill">买价 '+cost+'</span>'):''}${(!closed&&cur)?('<span class="pill">现价 '+cur+'</span>'):''}${(closed&&h.sell_price)?('<span class="pill ok">卖价 '+h.sell_price+'</span>'):''}${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}</div>${(advice&&!closed&&(h.shares||0)>0)?('<div class="why">💡 '+advice+'</div>'):''}${closed?('<div class="why">'+(h.sell_price?'已平仓 · 卖 '+h.sell_price+' · '+h.sell_time:'持仓已清零')+'</div>'):''}`));
+}
+/* 战法槽位·资金 (owner专属·2026-11-10 Frank: 每战法3槽建仓+2份机动弹药·真实/模拟独立计算·其他用户不加面板) */
+function _wCount(list,w){let n=0;(list||[]).forEach(h=>{if((h.shares||0)>0&&!h.sell_price&&String(h.strat||'').indexOf(w)>=0)n++});return n}
+function _slotMeter(u,t){let s='';for(let i=0;i<t;i++)s+='<span class="slotb'+(i<u?' on':'')+'"></span>';return s}
+function _slotLine(nm,zx,ly){
+  return `<div class="top" style="margin:5px 0;flex-wrap:wrap"><span class="nm" style="min-width:74px">${nm}</span>`+
+    `<span title="指星·3槽建仓" style="white-space:nowrap"><b>指星</b> ${_slotMeter(zx,3)} <span class="pill">${zx}/3 ${zx>=3?'满':('空'+(3-zx)+'盯新票')}</span></span>`+
+    `<span title="燎原·3槽建仓" style="white-space:nowrap"><b>燎原</b> ${_slotMeter(ly,3)} <span class="pill">${ly}/3 ${ly>=3?'满':('空'+(3-ly)+'盯新票')}</span></span>`+
+    `<span class="pill" style="color:var(--gold);white-space:nowrap" title="机动弹药·盯回踩过谷买·不用于开新仓">弹药2份·回踩接回</span></div>`;
+}
+function renderOwnerSlots(b){
+  b.appendChild(el('div','tier','🧩 战法槽位 · 资金（主账号）',0));
+  const card=el('div','card');
+  card.appendChild(_slotLine('🏦 真实盘',_wCount(AUTOH,'指星'),_wCount(AUTOH,'燎原')));
+  card.appendChild(_slotLine('📈 模拟盘',_wCount(SIH,'指星'),_wCount(SIH,'燎原')));
+  b.appendChild(card);
+}
+function renderOwnerSlotsCompact(body){
+  const s='🧩 槽位 · 🏦真 指星<strong>'+_wCount(AUTOH,'指星')+'/3</strong>·燎原<strong>'+_wCount(AUTOH,'燎原')+'/3</strong> ｜ 📈模拟 指星<strong>'+_wCount(SIH,'指星')+'/3</strong>·燎原<strong>'+_wCount(SIH,'燎原')+'/3</strong> · 机动弹药2份(回踩接回)';
+  body.appendChild(el('div','banner info',s,0));
 }
 function l1verdict(code,strat){
   /* 从晚间 L1 批次(l1_today, key=6位代码)取真实判段; 无则返回null走静态文案 */
@@ -725,6 +748,7 @@ function renderReview(d, body){
   body.innerHTML='';
   body.appendChild(el('h3','','⚡ 我的复盘 · '+d.date,0));
   body.appendChild(el('div','card',`场景:<span class="scene-tag" style="font-size:13px">${(d.scene&&d.scene.name)||'待定'}</span>${isOwner()?(' · 当日方向:'+((d.zhixing||{}).summary||'-')):''}<span style="color:var(--dim)"> · 只复盘你自己的持仓</span>`,0));
+  if(isOwner())renderOwnerSlotsCompact(body);
   if(!authed){body.appendChild(lockCard('登录后查看你的持仓复盘'));return}
   const snap=(DREV||{})[d.date];
   if(snap&&Array.isArray(snap.open))renderReviewSnap(d,body,snap);
