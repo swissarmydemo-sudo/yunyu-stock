@@ -227,6 +227,10 @@ function renderHoldings(d){
 /* -- 主账号(个体操作信号仅此账号可见) -- */
 const OWNER_EMAIL='frankdyuan@petalmail.com';
 function isOwner(){return authed&&DBUSER&&String(DBUSER.email||'').toLowerCase()===OWNER_EMAIL}
+/* 2026-11-10 Frank: 今日操作(卖出/持仓)建议必须按"当前用户自己登记的股票"给。
+   返回当前用户 未平仓 的持仓代码集合(手动自选 MYH + 自己的真实持仓 auto_holdings)。
+   owner 返回 null 表示"展示全部"(owner 的破晓/燎原信号都是他体系的)。 */
+function myOpenCodes(){const s=new Set();(AUTOH||[]).forEach(h=>{if((h.shares||0)>0&&!h.sell_price)s.add(String(h.code).slice(-6))});(MYH||[]).forEach(h=>{if(!h.sell_price)s.add(String(h.code).slice(-6))});return s}
 function stratDesc(k){const m={'指星':'主仓中长期 · 全市场尖峰模型打分选股,叠加板块/支撑加分 · 过顶卖、反弹接回 · 持有周~数月,止损约-10%','燎原':'长期低频 · 沪深主板浓缩池,动量+资金启动 · 约持30天,5份滚动 · 硬扛不设止损','破晓':'隔日超短 · T尾盘买入、T1开盘卖出 · 冲高+1%止盈、-0.5%回撤卖 · 低迷场景空仓','打新':'新股申购 · 主板/创业板/科创板打新 · 中签上市后卖出','ETF':'主题方向 · 按板块强弱信号选ETF,仅供方向参考'};return m[k]||''}
 /* -- 自选股跟踪(每用户) -- */
 /* 折叠开关: 点击切换下一个兄弟容器显隐 */
@@ -360,6 +364,10 @@ function renderSdmTree(container){
 function renderEnv(d, body){
   body.innerHTML='';
   const today=d.date;
+  /* 2026-11-10 Frank: 卖出/持仓操作建议只对"当前用户自己登记的股票"显示。
+     owner(指星/破晓/燎原信号都是他自己体系的)→ 展示全部; 其他用户→ 只展示其持仓/自选相关的信号。 */
+  const myo=isOwner()?null:myOpenCodes();
+  const inMy=code=>{if(myo===null)return true;return myo.has(String(code).slice(-6))};
   /* 场景 + 共振 */
   body.appendChild(sectH3('🧭 今日环境 · '+today, d, 'env'));
   const sce=el('div','card');
@@ -384,7 +392,7 @@ function renderEnv(d, body){
   if(z.summary&&isOwner())body.appendChild(el('div','card',`📋 ${z.summary}${(z.source)?' <span style="color:var(--dim);font-size:12px">· '+z.source+'</span>':''}`,0));
   /* 破晓·今日操作(超短): 开盘卖昨日买入 + 尾盘买今日推荐 */
   if(authed){
-    const pxs=(d.poxiao&&d.poxiao.sell_today)||[];
+    const pxs=(d.poxiao&&(d.poxiao.sell_today||[]).filter(it=>inMy(it.code)))||[];
     const pxb=(d.poxiao&&d.poxiao.recs)||[];
     if(pxs.length||pxb.length){
       body.appendChild(el('div','tier','⚡ 破晓 · 今日操作(超短)',0));
@@ -404,7 +412,7 @@ function renderEnv(d, body){
   }
   /* 燎原·今日操作(长期低频·读前一晚信号) */
   if(authed){
-    const ly=(d.liaoyuan||{});const lyb=ly.buy_signal;const lyrank=(ly.buy_rank_top5||[]).slice(0,5);const lysell=ly.sell_signals||[];
+    const ly=(d.liaoyuan||{});const lyb=ly.buy_signal;const lyrank=(ly.buy_rank_top5||[]).slice(0,5);const lysell=(ly.sell_signals||[]).filter(s=>inMy(s.code));
     body.appendChild(el('div','tier','🔥 燎原 · 今日操作(长期低频)',0));
     const cly=el('div','card');
     if(lyb||lyrank.length||lysell.length){
