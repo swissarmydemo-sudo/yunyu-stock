@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.2 (2026-11-10)
-     数据: 量化体系每日产物(场景/SDM/四战法/操作建议/共振)
-     登录: 与「语之境界」同一套 Supabase 账号体系; 我的持仓随账号云端独立(stock_holdings)
-     闸门: 未登录仅见场景+SDM; 登录解锁全部推荐/ETF/持仓/复盘
+     yunyu-stock · 语之策略 v1.0.4 (2026-11-10)
+     数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
+     分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
+     登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
+     Tab: 今日/推荐池/自选/(板块SDM独立)/历史/复盘/关于
 ================================================ -->
 <style>
 :root{--gold:#f4a261;--bg:#0f1220;--card:#1b2036;--line:#2a3152;--txt:#e8eaf6;--dim:#9aa0c3;--ok:#2ec4b6;--bad:#ef476f;--accent:#5aa9e6;--jp:#e63946}
@@ -142,7 +143,7 @@ const LANG_COLOR={};
 /* ===== Supabase (与语之境界同一账号) ===== */
 const SB_URL="https://ridzzptbvirtpunltucb.supabase.co";
 const SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpZHp6cHRidmlydHB1bmx0dWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQyMzQyNzAsImV4cCI6MjEwOTgxMDI3MH0.QF6IeeRRG4K5WlYh-Lj1X5YyMFg6vQyIK7Mrtimpnu4";
-let DB=null,DBUSER=null,authed=false,MYH=[];
+let DB=null,DBUSER=null,authed=false,MYH=[],AUTOH=[];
 const HSTORE='stock_holdings';
 function $(id){return document.getElementById(id)}
 function el(t,c,h){const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e}
@@ -168,8 +169,8 @@ function boardOf(code){
 function bp(code){const b=boardOf(code);return b?`<span class="board">${b}</span>`:''}
 function minibtn(code,name,price,strat){const c=String(code).replace(/\D/g,'').slice(-6);if(!c||c.length!==6)return'';return`<span class="minibtn" onclick="addHolding('${c}','${String(name||'').replace(/'/g,'')}','${price||0}','${String(strat||'').replace(/'/g,'')}')">＋</span>`}
 /* -- 每账号持仓(云端) -- */
-async function loadHoldings(){MYH=[];if(!(DB&&DBUSER))return;try{const{data}=await DB.from(HSTORE).select('data').eq('id',DBUSER.id).maybeSingle();MYH=(data&&data.data&&data.data.holdings)||[]}catch(e){MYH=[]}}
-async function saveHoldings(){if(!(DB&&DBUSER))return;try{await DB.from(HSTORE).upsert({id:DBUSER.id,data:{holdings:MYH},updated_at:new Date().toISOString()},{onConflict:'id'})}catch(e){console.log(e)}}
+async function loadHoldings(){MYH=[];AUTOH=[];if(!(DB&&DBUSER))return;try{const{data}=await DB.from(HSTORE).select('data').eq('id',DBUSER.id).maybeSingle();const dd=data&&data.data;MYH=(dd&&dd.holdings)||[];AUTOH=(dd&&dd.auto_holdings)||[]}catch(e){MYH=[];AUTOH=[]}}
+async function saveHoldings(){if(!(DB&&DBUSER))return;try{await DB.from(HSTORE).upsert({id:DBUSER.id,data:{holdings:MYH,auto_holdings:AUTOH},updated_at:new Date().toISOString()},{onConflict:'id'})}catch(e){console.log(e)}}
 function addHolding(code,name,price,strat){
   if(!authed){openAuth();return}
   const c=String(code).replace(/\D/g,'').slice(-6);if(c.length!==6){toast('代码无效');return}
@@ -207,8 +208,20 @@ function stratDesc(k){const m={'指星':'主仓中长期 · 全市场尖峰模�
 /* -- 自选股跟踪(每用户) -- */
 function renderWatch(d){
   const b=$('watchBody');b.innerHTML='';
-  b.appendChild(sectH3('🎒 我的自选 · 持仓盈亏跟踪', d, 'ret'));
-  if(!authed){b.appendChild(lockCard('登录后建立自己的自选股,跟踪买卖与盈亏'));return}
+  b.appendChild(sectH3('🎒 我的仓位 · 跟踪买卖与盈亏', d, 'ret'));
+  if(!authed){b.appendChild(lockCard('登录后建立自己的仓位/自选股,跟踪买卖与盈亏'));return}
+  /* 主账号真实持仓(体系自动对接·只读) */
+  if(isOwner()){
+    const aopen=AUTOH.filter(h=>(h.shares||0)>0&&!h.sell_price), aclosed=AUTOH.filter(h=>!((h.shares||0)>0&&!h.sell_price));
+    b.appendChild(el('div','tier','🏦 真实持仓 · 体系自动对接(只读)('+(aopen.length+aclosed.length)+')',0));
+    if(aopen.length||aclosed.length){
+      aopen.forEach(h=>renderAutoH(b,d,h));
+      if(aclosed.length){b.appendChild(el('div','study-note','— 已平仓/清零 '+aclosed.length+' 只 —',0));aclosed.forEach(h=>renderAutoH(b,d,h,true))}
+      b.appendChild(el('div','study-note','由体系每晚自动同步真实持仓(兴业/东财); 只读, 不受手动自选影响。',0));
+    }else b.appendChild(el('div','study-note','体系尚未同步真实持仓(同步脚本未跑或今日无持仓)。',0));
+  }
+  /* 手动自选 */
+  b.appendChild(el('div','tier','📌 我的自选 · 手动跟踪',0));
   /* 加自选表单 */
   const form=el('div','card');
   form.appendChild(el('div','tier','+ 加自选(可从推荐池点「+」一键加入)',0));
@@ -234,6 +247,17 @@ function renderWatch(d){
   }
   /* 表单绑定 */
   setTimeout(()=>{const a=$('wAdd');if(a)a.onclick=()=>{const c=$('wCode').value.trim(),n=$('wName').value.trim(),s=$('wStrat').value,p=$('wPrice').value.trim(),da=$('wDate').value.trim(),sh=$('wShares').value.trim();const c6=c.replace(/\D/g,'').slice(-6);if(c6.length!==6){toast('请填6位代码');return}const now=new Date();MYH.push({code:c6,name:n||c6,strat:s,shares:(+sh)||0,cost:(+p)||0,buy_time:(da||now.toISOString().slice(0,10)),added:now.toISOString().slice(0,10)});saveHoldings().then(()=>showTab('watch'));toast('已加入自选')}},0);
+}
+/* 主账号真实持仓(自动对接·只读)渲染 */
+function renderAutoH(b,d,h,closed){
+  const q=(d.ret||{})[h.code];const cur=(q&&q.price)||h.last||0;const cost=h.cost||0;
+  const pnl=(cur&&cost)?((cur-cost)/cost*100):null;
+  let advice=l1For(d,h);
+  if(pnl!=null&&!closed&&(h.shares||0)>0){
+    if(pnl<=-10)advice='⚠️ 浮亏 '+fmtp(pnl)+' · 逼近约-10%止损位,盯战法卖点 · '+advice;
+    else if(pnl>=12)advice='🏆 '+fmtp(pnl)+' 浮盈 · 关注止盈/离场信号 · '+advice;
+  }
+  b.appendChild(el('div','sitem',`<div class="top"><span class="nm">${h.name||h.code}</span>${bp(h.code)}<span class="board">${h.strat||'指星'}</span>${h.acct?('<span class="pill">'+h.acct+'</span>'):''}${(h.shares||0)>0?('<span class="pill">'+h.shares+'股</span>'):''}${cost?('<span class="pill">买价 '+cost+'</span>'):''}${cur?('<span class="pill">现价 '+cur+'</span>'):''}${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}</div>${(advice&&!closed&&(h.shares||0)>0)?('<div class="why">💡 '+advice+'</div>'):''}${closed?('<div class="why">'+(h.sell_price?'已平仓 · 卖 '+h.sell_price+' · '+h.sell_time:'持仓已清零')+'</div>'):''}`));
 }
 function l1For(d,h){
   const c=h.code;const z=d.zhixing||{};
@@ -464,7 +488,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.3</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.4</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -473,6 +497,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.4','11-10','主账号真实持仓<b>战法自动对接</b>: 体系每晚自动同步 Frank 真实持仓(兴业/东财)到「我的仓位·真实持仓(只读)」, 每股标注战法+浮亏/止盈, 命中当日卖出/持有信号时 L1 高亮提示; 其他账号仍用<b>手动自选</b>'],
     ['v1.0.3','11-10','信息分层:<b>推荐池普适</b>(所有登录用户同看每日推荐股+点评)+<b>个股操作建议仅主账号</b>(frankdyuan@petalmail.com)+<b>每人自选跟踪</b>(选战法·记买入价/时间·卖出价/时间复盘·收对应战法L1指导) · 每个战法加<b>策略说明</b> · 板块SDM<b>独立成Tab</b>(推荐池/自选/板块SDM三Tab) · 指星不再嵌套燎原'],
     ['v1.0.2','11-10','ETF 明细修复(强/弱板块列表) · 股票标注<b>名称+代码+板块类型</b>(沪/深主板·创业板·科创板·北交所·ETF) · 我的持仓<b>随账号云端独立</b> · 未登录<b>登录闸门</b>(仅见场景+板块概览)'],
     ['v1.0.1','11-10','UI 打磨 · 版本记录时间线 · 全局风险提示「股市有风险,投资需谨慎」 · 每块更新时间到分钟'],
@@ -491,7 +516,7 @@ function openAuth(){$('authMsg').textContent='';$('authModal').classList.remove(
 function closeAuth(){$('authModal').classList.add('hidden')}
 async function doLogout(){try{await DB.auth.signOut()}catch(e){}DBUSER=null;authed=false;MYH=[];$('acctBtn').textContent='🔐 登录';toast&&toast('已退出');showTab(CUR)}
 function toast(m){const e=el('div','','');const x=el('div','banner info',m);e.appendChild(x);document.body.appendChild(e);setTimeout(()=>e.remove(),2200)}
-async function applySession(ses){const u=ses&&ses.user;if(u){DBUSER=u;authed=true;$('acctBtn').textContent='👤 '+(u.email||u.id.slice(0,6));await loadHoldings();showTab(CUR)}else{DBUSER=null;authed=false;MYH=[];$('acctBtn').textContent='🔐 登录';showTab(CUR)}}
+async function applySession(ses){const u=ses&&ses.user;if(u){DBUSER=u;authed=true;$('acctBtn').textContent='👤 '+(u.email||u.id.slice(0,6));await loadHoldings();showTab(CUR)}else{DBUSER=null;authed=false;MYH=[];AUTOH=[];$('acctBtn').textContent='🔐 登录';showTab(CUR)}}
 function bindAuth(){
   $('acctBtn').onclick=()=>{DBUSER?doLogout():openAuth()};
   $('authClose').onclick=closeAuth;
