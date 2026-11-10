@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.11 (2026-11-10)
+     yunyu-stock · 语之策略 v1.0.12 (2026-11-10)
      数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
      分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
      登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
@@ -374,21 +374,44 @@ function renderSdm(d){
 /* -- SDM 板块四级树下钻渲染 -- */
 function renderSdmTree(container){
   if(!SDM||!SDM.length){container.appendChild(el('div','study-note','板块台账未载入。'));return}
-  container.appendChild(el('div','study-note','板块四级台账('+SDM.length+' 节点):一级=板块 · 二级=子板块 · 三级=申万行业 · 四级=个股。排序:上行 → 对峙 → 下行 → 其他。点 ▸ 逐级展开。',0));
-  /* 2026-11-10 Frank: 按趋势分类排序 上行(0)→对峙(1)→下行(2)→其他(3) */
+  /* 2026-11-10 Frank 重设计: 按趋势 上行→对峙→下行→其他 分四大块; 一级/二级平铺可见, 三级点击展开, 一目了然 */
   const TORD={up:0,side:1,down:2,other:3};
-  const TCAT={up:['上行','ok'],side:['对峙','wait'],down:['下行','bad'],other:['其他','']};
-  const tkey=n=>(TORD[n.t]!=null?TORD[n.t]:3);
-  const roots=SDM.filter(n=>(n.l==='一级')).sort((a,b)=>tkey(a)-tkey(b));
-  const mkItem=(node,dep)=>{
-    const tc=TCAT[node.t]||TCAT.other;
-    const ttag=node.t&&node.t!=='other'?`<span class="tag ${tc[1]}">${tc[0]}</span>`:'';
-    const item=el('div','sitem',`<div class="top" style="padding-left:${dep*14}px"><span class="nm" style="color:${clsColor(node.s)}">${node.s}</span>${ttag}<span class="pill">${node.l}</span></div>${node.d?`<div class="why">${node.d}</div>`:''}`);
-    const kids=SDM.filter(n=>n.p===node.s).sort((a,b)=>tkey(a)-tkey(b));
-    if(kids.length){const kidsBox=el('div','');item.appendChild(kidsBox);const tg=el('button','btn ghost','▸ '+kids.length);tg.style.margin='6px 0 0 '+dep*14+'px';tg.style.fontSize='11px';tg.style.padding='4px 10px';tg.title='展开子级';tg.onclick=()=>{const open=kidsBox.style.display==='block';kidsBox.style.display=open?'none':'block';tg.textContent=open?('▸ '+kids.length):('▾ '+kids.length);if(!open)kids.forEach(k=>kidsBox.appendChild(mkItem(k,dep+1)))};item.appendChild(tg)}
-    return item;
-  };
-  const wrap=el('div','');roots.forEach(r=>wrap.appendChild(mkItem(r,0)));container.appendChild(wrap);
+  const TCAT=[['上行','ok','🟢'],['对峙','wait','🟡'],['下行','bad','🔴'],['其他','','⚪']];
+  const KEYS=['up','side','down','other'];
+  const kidsOf=p=>SDM.filter(n=>n.p===p).sort((a,b)=>(TORD[a.t]!=null?TORD[a.t]:3)-(TORD[b.t]!=null?TORD[b.t]:3));
+  const l1=SDM.filter(n=>n.l==='一级').sort((a,b)=>(TORD[a.t]!=null?TORD[a.t]:3)-(TORD[b.t]!=null?TORD[b.t]:3));
+  container.appendChild(el('div','study-note','板块三级体系('+SDM.length+'节点) · 按趋势分组：<b>上行 → 对峙 → 下行 → 其他</b>。一级/二级平铺可见，三级(申万行业)点「三级 ▸」展开，个股在三级下。',0));
+  const top=el('div','');top.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px';
+  const mkTopBtn=(g)=>{const[l,t,e]=TCAT[g];const n=l1.filter(x=>(TORD[x.t]!=null?TORD[x.t]:3)===g).length;const b=el('button','btn ghost',`${e} ${l} <span class="pill" style="margin-left:4px">${n}</span>`);b.style.cssText='font-size:11px;padding:5px 10px';b.onclick=()=>{document.querySelectorAll('[data-sdmgroup="'+g+'"]').forEach(bx=>{const op=bx.style.display!=='none';bx.style.display=op?'none':'block';const hb=bx.parentNode.querySelector('.sdmg-head');if(hb)hb.textContent=hb._t+(op?' ▸ 展开':' ▾ 收起')})};return b};
+  [0,1,2,3].forEach(g=>top.appendChild(mkTopBtn(g)));
+  container.appendChild(top);
+  const wrap=el('div','');
+  [0,1,2,3].forEach(g=>{
+    const grp=l1.filter(x=>(TORD[x.t]!=null?TORD[x.t]:3)===g);
+    if(!grp.length)return;
+    const[l,tk,em]=TCAT[g];
+    const head=el('div','sdmg-head',`${em} ${l} · ${grp.length} 模块`);head._t=head.textContent;head.style.cssText='font-weight:700;font-size:13px;color:'+(tk==='ok'?'#e04f5f':tk==='wait'?'#d4a017':tk==='bad'?'#2f9e44':'#8a94a6')+';margin:14px 0 6px;cursor:pointer;cursor:pointer';head.onclick=()=>{const bx=wrap.querySelector('[data-sdmgroup="'+g+'"]');const op=bx.style.display!=='none';bx.style.display=op?'none':'block';head.textContent=head._t+(op?' ▸ 展开':' ▾ 收起')};
+    wrap.appendChild(head);
+    const box=el('div','');box.setAttribute('data-sdmgroup',g);box.style.display=(g<=0)?'block':'none';
+    grp.forEach(n1=>{
+      const k2=kidsOf(n1.s);
+      const h1=el('div','sitem',`<div class="top"><span class="sdm1">⬡</span><span class="nm" style="color:${clsColor(n1.s)}">${n1.s}</span>${n1.t&&n1.t!=='other'?`<span class="tag ${tk}">${l}</span>`:''}<span class="pill">二级${k2.length}</span></div>${n1.d?`<div class="why">${String(n1.d)}</div>`:''}`);h1.style.cssText='background:rgba(255,255,255,.04);border-left:3px solid '+(tk==='ok'?'#e04f5f':tk==='wait'?'#d4a017':tk==='bad'?'#2f9e44':'#444')+';margin:6px 0 2px;padding:4px 8px;border-radius:4px';
+      box.appendChild(h1);
+      const b2=el('div','');b2.style.cssText='margin:0 0 4px 14px';
+      k2.forEach(n2=>{
+        const k3=kidsOf(n2.s);
+        const row=el('div','sitem',`<div class="top"><span class="nm">${String(n2.s)}</span>${n2.d?`<span class="why" style="display:inline;margin-left:8px;color:#8a94a6;font-weight:400">${String(n2.d).slice(0,70)}</span>`:''}${k3.length?`<span class="pill" style="cursor:pointer">三级 ${k3.length} ▸</span>`:''}</div>`);row.style.cssText='padding:2px 6px;border-radius:3px;font-size:12px';
+        const pill=row.querySelector('.pill');
+        const b3=el('div','');b3.style.cssText='margin-left:16px';
+        let expanded=false;
+        if(pill)pill.onclick=()=>{expanded=!expanded;if(!expanded){b3.innerHTML='';pill.textContent='三级 '+k3.length+' ▸';return}pill.textContent='三级 '+k3.length+' ▾';k3.forEach(n3=>{const c4=SDM.filter(n=>n.p===n3.s);const chip=el('div','sdm3',`${String(n3.s)}${c4.length?` <span class="c6">${c4.length}个股</span>`:''}`);chip.style.cssText='background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:2px 9px;font-size:11px;display:inline-block;margin:2px 3px;color:#cdd6e4';b3.appendChild(chip)})};
+        row.appendChild(b3);b2.appendChild(row);
+      });
+      box.appendChild(b2);
+    });
+    wrap.appendChild(box);
+  });
+  container.appendChild(wrap);
 }
 
 /* ===== 环境(场景/SDM/共振/操作建议) ===== */
@@ -651,7 +674,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.11</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.12</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -660,6 +683,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.12','11-10','板块SDM重设计: 按趋势 上行→对峙→下行→其他 分四大块, 一级/二级平铺可见三级展开; 推荐池只放推荐+买入(去卖出); 自选登记战法必填; L2承接/站点聚合战法归属分清; 用户持仓接入L1状态机生成今日推荐(site_l1_for_users每晚跑)'],
     ['v1.0.11','11-10','今日操作建议分人: 卖出/持仓信号只对当前用户自己登记的股票; owner 保留持有池份数影响的体系信号+真实仓/模拟仓两模块; 其他用户买入后仅按对应战法 L1 状态机指导(不受池份数影响); 非 owner 隐藏我仓位明细(现金/份数)'],
     ['v1.0.10','11-10','板块SDM 按趋势排序: 上行 → 对峙 → 下行 → 其他(每级都排, 板块名旁加趋势标签); 各Tab股票统一显示「名称+代码」'],
     ['v1.0.9','11-10','UI 整体优化: 配色层次+渐变标题+吸顶导航+卡片/列表质感+悬停反馈+滚动条/选中/键盘焦点; 修复输入框文字色变量错误'],
