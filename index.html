@@ -165,7 +165,7 @@ const LANG_COLOR={};
 /* ===== Supabase (与语之境界同一账号) ===== */
 const SB_URL="https://ridzzptbvirtpunltucb.supabase.co";
 const SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpZHp6cHRidmlydHB1bmx0dWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQyMzQyNzAsImV4cCI6MjEwOTgxMDI3MH0.QF6IeeRRG4K5WlYh-Lj1X5YyMFg6vQyIK7Mrtimpnu4";
-let DB=null,DBUSER=null,authed=false,MYH=[],AUTOH=[],SIH=[],SIMSUM={},FB=[];
+let DB=null,DBUSER=null,authed=false,MYH=[],AUTOH=[],SIH=[],SIMSUM={},L1T={},FB=[];
 const HSTORE='stock_holdings';
 function $(id){return document.getElementById(id)}
 function el(t,c,h){const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e}
@@ -192,7 +192,7 @@ function boardOf(code){
 function bp(code){const b=boardOf(code);return b?`<span class="board">${b}</span>`:''}
 function minibtn(code,name,price,strat){const c=String(code).replace(/\D/g,'').slice(-6);if(!c||c.length!==6)return'';return`<span class="minibtn" onclick="addHolding('${c}','${String(name||'').replace(/'/g,'')}','${price||0}','${String(strat||'').replace(/'/g,'')}')">＋</span>`}
 /* -- 每账号持仓(云端) -- */
-async function loadHoldings(){MYH=[];AUTOH=[];FB=[];if(!(DB&&DBUSER))return;try{const{data}=await DB.from(HSTORE).select('data').eq('id',DBUSER.id).maybeSingle();const dd=data&&data.data;MYH=(dd&&dd.holdings)||[];AUTOH=(dd&&dd.auto_holdings)||[];SIH=(dd&&dd.auto_holdings_sim)||[];SIMSUM=(dd&&dd.sim_summary)||{};FB=(dd&&dd.feedback)||[]}catch(e){MYH=[];AUTOH=[];FB=[]}}
+async function loadHoldings(){MYH=[];AUTOH=[];FB=[];if(!(DB&&DBUSER))return;try{const{data}=await DB.from(HSTORE).select('data').eq('id',DBUSER.id).maybeSingle();const dd=data&&data.data;MYH=(dd&&dd.holdings)||[];AUTOH=(dd&&dd.auto_holdings)||[];SIH=(dd&&dd.auto_holdings_sim)||[];SIMSUM=(dd&&dd.sim_summary)||{};L1T=(dd&&dd.l1_today)||{};FB=(dd&&dd.feedback)||[]}catch(e){MYH=[];AUTOH=[];FB=[]}}
 async function saveHoldings(){if(!(DB&&DBUSER))return;try{await DB.from(HSTORE).upsert({id:DBUSER.id,data:{holdings:MYH,auto_holdings:AUTOH,feedback:FB},updated_at:new Date().toISOString()},{onConflict:'id'})}catch(e){console.log(e)}}
 function addHolding(code,name,price,strat){
   if(!authed){openAuth();return}
@@ -318,8 +318,17 @@ function renderAutoH(cont,d,h,closed){
   }
   cont.appendChild(el('div','sitem',`<div class="top"><span class="nm">${NM(h.name,h.code)}</span>${bp(h.code)}<span class="board">${h.strat||'指星'}</span>${h.acct?('<span class="pill">'+h.acct+'</span>'):''}${(h.shares||0)>0?('<span class="pill">'+h.shares+'股</span>'):''}${cost?('<span class="pill">买价 '+cost+'</span>'):''}${(!closed&&cur)?('<span class="pill">现价 '+cur+'</span>'):''}${(closed&&h.sell_price)?('<span class="pill ok">卖价 '+h.sell_price+'</span>'):''}${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}</div>${(advice&&!closed&&(h.shares||0)>0)?('<div class="why">💡 '+advice+'</div>'):''}${closed?('<div class="why">'+(h.sell_price?'已平仓 · 卖 '+h.sell_price+' · '+h.sell_time:'持仓已清零')+'</div>'):''}`));
 }
+function l1verdict(code,strat){
+  /* 从晚间 L1 批次(l1_today, key=6位代码)取真实判段; 无则返回null走静态文案 */
+  const c=String(code).slice(-6);const r=(L1T||{})[c];
+  if(!r||!r.action||r.action==='数据暂缺')return null;
+  const act=r.action;
+  const emo=/止损|离场|回撤卖|减仓/.test(act)?'🔴':(/过顶卖|转弱/.test(act)?'🟡':(/止盈/.test(act)?'🟢':(/接回/.test(act)?'🔄接回':(act==='持有'||act==='持有观察')?'👀':'💡')));
+  return `${emo} 今日L1: ${r.reason||act}${r.date?(' ('+r.date+')'):''}`;
+}
 function l1For(d,h){
   const c=h.code;const z=d.zhixing||{};const strat=h.strat||'自选';
+  const lv=l1verdict(c,h.strat);
   /* owner(真实仓/模拟仓): 受持有池份数影响的体系信号(买入/卖出/持有, 池满则无买入信号=天然池控) */
   if(isOwner()){
     const se=(z.sell||[]).find(x=>String(x.code).slice(-6)===c);
@@ -336,7 +345,8 @@ function l1For(d,h){
     if((''+strat).indexOf('燎原')>=0&&lyo.cash_left!=null)return '燎原 · 池现金 ¥'+lyo.cash_left+(lyo.funds?(' / '+lyo.funds+'份'):'')+' · 按L1状态机跟踪。';
     return stratDesc(strat)+' 持仓跟踪中, 暂无该股新信号。';
   }
-  /* 其他用户: 买入后仅受对应战法 L1 状态机影响(不看任何持有池份数/owner体系信号) */
+  /* 其他用户: 先看真实 L1 状态机判段(晚间批次算好), 无则静态描述 */
+  if(lv)return lv;
   const L1={'指星':'指星 L1 状态机 · 按买点/持有/过顶卖/离场跟踪, 结合你的成本给止盈止损','燎原':'燎原 L1 状态机 · 约持30天, 硬扛不设止损, 按到期γ止损/状态机离场跟踪','破晓':'破晓 L1 状态机 · T尾盘买/T1开盘卖, 冲高+1%止盈 / -0.5%回撤卖','打新':'打新 L1 · 中签上市后卖出兑现','ETF':'ETF 方向跟踪 · 按板块强弱信号给方向参考'};
   const base=(L1[strat]||(stratDesc(strat)+' · 按对应战法 L1 状态机跟踪'))+'。';
   return base+' 你的'+strat+'持仓按 L1 状态机指导, 不依赖任何持有池份数。';
@@ -695,7 +705,7 @@ function openAuth(){$('authMsg').textContent='';$('authModal').classList.remove(
 function closeAuth(){$('authModal').classList.add('hidden')}
 async function doLogout(){try{await DB.auth.signOut()}catch(e){}DBUSER=null;authed=false;MYH=[];$('acctBtn').textContent='🔐 登录';toast&&toast('已退出');showTab(CUR)}
 function toast(m){const e=el('div','','');const x=el('div','banner info',m);e.appendChild(x);document.body.appendChild(e);setTimeout(()=>e.remove(),2200)}
-async function applySession(ses){const u=ses&&ses.user;if(u){DBUSER=u;authed=true;$('acctBtn').textContent='👤 '+(u.email||u.id.slice(0,6));await loadHoldings();showTab(CUR)}else{DBUSER=null;authed=false;MYH=[];AUTOH=[];SIH=[];SIMSUM={};$('acctBtn').textContent='🔐 登录';showTab(CUR)}}
+async function applySession(ses){const u=ses&&ses.user;if(u){DBUSER=u;authed=true;$('acctBtn').textContent='👤 '+(u.email||u.id.slice(0,6));await loadHoldings();showTab(CUR)}else{DBUSER=null;authed=false;MYH=[];AUTOH=[];SIH=[];SIMSUM={};L1T={};$('acctBtn').textContent='🔐 登录';showTab(CUR)}}
 function bindAuth(){
   $('acctBtn').onclick=()=>{DBUSER?doLogout():openAuth()};
   $('authClose').onclick=closeAuth;
