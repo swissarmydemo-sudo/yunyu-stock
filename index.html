@@ -437,8 +437,8 @@ function l1For(d,h){
     const ly=(d.liaoyuan||{}).buy_rank_top5||[]; if(ly.some(x=>String(x.code).slice(-6)===c))return '今日燎原浓缩池在列 · 约持30天。';
     /* owner 池状态影响: 燎原现金/份数 → 新买需池有空位 */
     const lyo=d.liaoyuan||{};
-    if((''+strat).indexOf('燎原')>=0&&lyo.cash_left!=null)return '燎原 · 池现金 ¥'+lyo.cash_left+(lyo.funds?(' / '+lyo.funds+'份'):'')+' · 按L1状态机跟踪。';
-    return stratDesc(strat)+' 持仓跟踪中, 暂无该股新信号。';
+    if((''+strat).indexOf('燎原')>=0&&(''+strat).indexOf('真实')<0&&lyo.cash_left!=null)return '燎原 · 池现金 ¥'+lyo.cash_left+(lyo.funds?(' / '+lyo.funds+'份'):'')+' · 按L1状态机跟踪(模拟盘口径)。';
+    if((''+strat).indexOf('真实')>=0)return stratDesc(strat)+' 真实盘持仓 · 池状态不适用, 暂无该股新信号。'; return stratDesc(strat)+' 持仓跟踪中, 暂无该股新信号。';
   }
   /* 其他用户: 先看真实 L1 状态机判段(晚间批次算好), 无则静态描述 */
   if(lv)return lv;
@@ -818,6 +818,7 @@ function showTab(t){
 function renderAbout(){
   const b=$('aboutBody');b.innerHTML='';
     const VERSIONS=[
+    ['v1.0.31','11-10','修正资金标记归属: 燎原「池现金/份数」为模拟盘口径, 只标在模拟盘燎原持仓上; 真实盘燎原(如国恩股份·东财)不再误挂模拟盘池现金标记, 改走真实盘持仓备注'],
     ['v1.0.30','11-10','更正: 破晓槽位只显示<b>真实持仓</b>(未实盘则空槽待买入), 不再把破晓模型「昨买今卖信号」误当持仓; 模型信号单独标「未实盘·非持仓」; <b>破晓不用机动资金</b>(仅指星/燎原各2份), 破晓=资金均分3份(3等额槽); 修正图例'],
     ['v1.0.29','11-10','槽位卡补齐四战法: 真实盘新增<b>破晓</b>槽位(隔日T+1·展示昨买今卖当前持仓+机动弹药), 新增<b>📋打新</b>区(申购记录: 名称/板块/状态/中签); 与指星/燎原四战法齐平, 真实/模拟独立算'],
     ['v1.0.28','11-10','战法槽位可视化+SDM覆盖: ①自选&复盘共用「槽位网格」——每战法3槽(持仓🟩/空槽⬜待买入)+机动资金🟡显式2份, 真实/模拟独立算+资金; ②复盘SDM未覆盖修复——持仓个股无三级下钻时兜底到申万板块级SDM(板块链趋势+驱动), 不再显示「未覆盖」'],
