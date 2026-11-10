@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.25 (2026-11-10)
+     yunyu-stock · 语之策略 v1.0.26 (2026-11-10)
      数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
      分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
      登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
@@ -797,7 +797,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.25</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.26</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -806,6 +806,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.26','11-10','主账号「战法槽位 · 资金」面板(owner专属·其他用户两Tab零改动): 自选Tab=完整版(真实/模拟独立算·空槽位显式展示·每战法3槽建仓+机动弹药<strong>指星/燎原各2份</strong>口径), 复盘Tab=紧凑条; 资金显示=真实盘(兴业/东财增量/燎原池现金)+模拟可用(东财100万); cron联动: 破晓14:50任务末尾挂站同步(推完即aggregate+build+deploy, 原14:56/14:54独立cron停用)'],  
     ['v1.0.25','11-10','持仓战法归属修正: 模拟盘混着指星/燎原/破晓各战法仓位+真实盘有跟燎原信号买的, 统一按代码归属打标(指星=spike5台账/燎原=引擎持仓+历史信号/破晓=近3日推荐) → 国恩=燎原·真实, 弘元绿能=燎原·模拟盘, 立新能源/联特科技=指星·模拟盘'],
     ['v1.0.24','11-10','修复后端sync整段覆盖清掉l1_today/daily_reviews的bug(改合并保留); 模拟仓战法标记改「指星·模拟盘」; 重写当日快照'],
     ['v1.0.23','11-10','推荐池燎原补股票名称(买入信号+浓缩池表); 体系推荐复盘加指星·持有(东财模拟盘3只, 收益=当日价vs成本); 模拟盘快照落本地sim_holdings.json'],
