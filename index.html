@@ -380,16 +380,28 @@ function _slotCells(names){
 function _slotRow(wf,names){
   return `<div class="slotrow"><span class="slotwf">${wf}</span><span class="slots">${_slotCells(names)}</span></div>`;
 }
+function _poxiaoholds(d){const a=((d&&d.poxiao&&d.poxiao.sell_today)||[]);return a.map(x=>(x&&(x.name||x.code))||'').filter(Boolean).slice(0,3)}
+function _daxinLine(d){
+  const ap=(d&&d.daxin&&d.daxin.applied)||[]; if(!ap.length) return '暂无申购记录';
+  const hot=ap.filter(r=>String(r.status||'').indexOf('中签')>=0||String(r.status||'').indexOf('申购中')>=0||r.won);
+  const rest=ap.filter(r=>String(r.status||'').indexOf('中签')<0&&String(r.status||'').indexOf('申购中')<0&&!r.won);
+  const rec=hot.concat(rest).slice(0,4);
+  return rec.map(r=>`${r.name||r.code}(${r.board||''}) · ${r.status||''}${r.won?' 🎯中签':''}`).join('　｜　');
+}
 function slotsCardHTML(d){
   d=d||{}; const rc=d._realcash||{}; const ly=d.liaoyuan||{}; const ss=SIMSUM||{};
   const yin=v=>(v==null?'---':('¥'+Number(v).toLocaleString('zh-CN')));
   const wan=v=>(v==null?'---':((v/10000).toFixed(2)+'万'));
   let h='';
-  h+='<div class="slotacc">🏦 真实盘</div>'+_slotRow('指星',_openedNames(AUTOH,'指星'))+_slotRow('燎原',_openedNames(AUTOH,'燎原'));
-  h+='<div class="study-note">💰 真实可用 · 兴业(指星/主仓) <b>'+yin(rc.xingye)+'</b> ｜ 东财增量(燎原/增量) <b>'+yin(rc.dfcf)+'</b>'+(ly.cash_left!=null?(' ｜ 燎原池 <b>¥'+ly.cash_left+'</b>'+(ly.funds?('('+ly.funds+'份)'):'')):'')+'</div>';
+  // 真实盘: 指星/燎原/破晓(破晓=隔日T+1·展示昨买今卖当前持仓)
+  h+='<div class="slotacc">🏦 真实盘</div>'+_slotRow('指星',_openedNames(AUTOH,'指星'))+_slotRow('燎原',_openedNames(AUTOH,'燎原'))+_slotRow('破晓',_poxiaoholds(d));
+  h+='<div class="study-note">💰 真实可用 · 兴业(指星/主仓) <b>'+yin(rc.xingye)+'</b> ｜ 东财增量(燎原/破晓增量) <b>'+yin(rc.dfcf)+'</b>'+(ly.cash_left!=null?(' ｜ 燎原池 <b>¥'+ly.cash_left+'</b>'+(ly.funds?('('+ly.funds+'份)'):'')):'')+'</div>';
+  // 模拟盘: 指星/燎原
   h+='<div class="slotacc">📈 模拟盘</div>'+_slotRow('指星',_openedNames(SIH,'指星'))+_slotRow('燎原',_openedNames(SIH,'燎原'));
   if(ss.avail_balance!=null)h+='<div class="study-note">💰 模拟可用 <b>'+wan(ss.avail_balance)+'</b>（东财100万模拟盘共享账户）</div>';
-  h+='<div class="slotlegend">🟩=持仓 · ⬜<span style="border:1px dashed;color:var(--dim);padding:0 2px">待买入</span>=空槽盯新票 · <span style="color:var(--gold)">机动资金</span>=各战法2份(不用于开新仓 · 盯回踩过谷买) · 真实/模拟独立算</div>';
+  // 打新区
+  h+='<div class="slotacc">📋 打新</div><div class="study-note">'+_daxinLine(d)+'</div>';
+  h+='<div class="slotlegend">🟩=持仓 · ⬜<span style="border:1px dashed;color:var(--dim);padding:0 2px">待买入</span>=空槽盯新票 · 🟡<span style="color:var(--gold)">机动资金</span>=各战法2份(不用于开新仓·盯回踩过谷买) · 破晓=隔日T+1(昨买今卖当前持) · 真实/模拟独立算</div>';
   return '<div class="slotgrid">'+h+'</div>';
 }
 function renderOwnerSlots(b,d){
@@ -804,6 +816,7 @@ function showTab(t){
 function renderAbout(){
   const b=$('aboutBody');b.innerHTML='';
     const VERSIONS=[
+    ['v1.0.29','11-10','槽位卡补齐四战法: 真实盘新增<b>破晓</b>槽位(隔日T+1·展示昨买今卖当前持仓+机动弹药), 新增<b>📋打新</b>区(申购记录: 名称/板块/状态/中签); 与指星/燎原四战法齐平, 真实/模拟独立算'],
     ['v1.0.28','11-10','战法槽位可视化+SDM覆盖: ①自选&复盘共用「槽位网格」——每战法3槽(持仓🟩/空槽⬜待买入)+机动资金🟡显式2份, 真实/模拟独立算+资金; ②复盘SDM未覆盖修复——持仓个股无三级下钻时兜底到申万板块级SDM(板块链趋势+驱动), 不再显示「未覆盖」'],
     ['v1.0.27','11-10','修复复盘场景卡「当日方向」排版: 不再把 zhixing.summary 一行糊死(买/卖/补/日期/代码挤一块), 按 / 拆段成彩色pill分行展示——买🟢绿/卖🔴红/补📌中性, 场景卡更清爽(场景标签改flex行,修复高pill与下方「当日方向」重叠)'],
     ['v1.0.26','11-10','主账号「战法槽位 · 资金」面板(owner专属·其他用户两Tab零改动): 自选Tab=完整版(真实/模拟独立算·空槽位显式展示·每战法3槽建仓+机动弹药<strong>指星/燎原各2份</strong>口径), 复盘Tab=紧凑条; 资金显示=真实盘(兴业/东财增量/燎原池现金)+模拟可用(东财100万); cron联动: 破晓14:50任务末尾挂站同步(推完即aggregate+build+deploy, 原14:56/14:54独立cron停用)'],  
