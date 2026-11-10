@@ -362,38 +362,33 @@ function renderSdm(d){
 /* -- SDM 板块四级树下钻渲染 -- */
 function renderSdmTree(container){
   if(!SDM||!SDM.length){container.appendChild(el('div','study-note','板块台账未载入。'));return}
-  /* 2026-11-10 Frank 重设计: 按趋势 上行→对峙→下行→其他 分四大块; 一级/二级平铺可见, 三级点击展开, 一目了然 */
+  /* 2026-11-10 Frank: 一整套 一级→二级→三级 连贯展示; 三层全量平铺(三级内联chip), 按趋势 上行→对峙→下行→其他 分组; 可收起 */
   const TORD={up:0,side:1,down:2,other:3};
-  const TCAT=[['上行','ok','🟢'],['对峙','wait','🟡'],['下行','bad','🔴'],['其他','','⚪']];
-  const KEYS=['up','side','down','other'];
+  const TCAT=[['上行','ok','#e04f5f'],['对峙','wait','#d4a017'],['下行','bad','#2f9e44'],['其他','','#8a94a6']];
   const kidsOf=p=>SDM.filter(n=>n.p===p).sort((a,b)=>(TORD[a.t]!=null?TORD[a.t]:3)-(TORD[b.t]!=null?TORD[b.t]:3));
   const l1=SDM.filter(n=>n.l==='一级').sort((a,b)=>(TORD[a.t]!=null?TORD[a.t]:3)-(TORD[b.t]!=null?TORD[b.t]:3));
-  container.appendChild(el('div','study-note','板块三级体系('+SDM.length+'节点) · 按趋势分组：<b>上行 → 对峙 → 下行 → 其他</b>。一级/二级平铺可见，三级(申万行业)点「三级 ▸」展开，个股在三级下。',0));
-  const top=el('div','');top.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px';
-  const mkTopBtn=(g)=>{const[l,t,e]=TCAT[g];const n=l1.filter(x=>(TORD[x.t]!=null?TORD[x.t]:3)===g).length;const b=el('button','btn ghost',`${e} ${l} <span class="pill" style="margin-left:4px">${n}</span>`);b.style.cssText='font-size:11px;padding:5px 10px';b.onclick=()=>{document.querySelectorAll('[data-sdmgroup="'+g+'"]').forEach(bx=>{const op=bx.style.display!=='none';bx.style.display=op?'none':'block';const hb=bx.parentNode.querySelector('.sdmg-head');if(hb)hb.textContent=hb._t+(op?' ▸ 展开':' ▾ 收起')})};return b};
-  [0,1,2,3].forEach(g=>top.appendChild(mkTopBtn(g)));
-  container.appendChild(top);
+  container.appendChild(el('div','study-note','板块 SDM · 一整套 <b>一级→二级→三级</b> 连贯展示 · 三层默认全量平铺 · 按趋势 <b>上行→对峙→下行→其他</b> 分组 · 点块标题或「全部」可收起。',0));
+  const ctrl=el('div','');ctrl.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px;align-items:center';
+  [0,1,2,3].forEach(g=>{const[lab,tk,col]=TCAT[g];const n=l1.filter(x=>(TORD[x.t]!=null?TORD[x.t]:3)===g).length;const bb=el('button','btn ghost',`<span style="color:${col}">●</span> ${lab} <span style="opacity:.6">${n}</span>`);bb.style.cssText='font-size:12px;padding:5px 10px';bb.onclick=()=>{bb._o=!bb._o;const bx=container.querySelector('[data-g=\"'+g+'\"]');if(bx)bx.style.display=bb._o?'none':'block';bb.style.opacity=bb._o?.5:1};ctrl.appendChild(bb)});
+  const allBtn=el('button','btn ghost','全部 收起▾');allBtn._o=true;allBtn.style.cssText='font-size:12px;padding:5px 10px;margin-left:auto';allBtn.onclick=()=>{allBtn._o=!allBtn._o;allBtn.textContent=allBtn._o?'全部 收起▾':'全部 展开▸';container.querySelectorAll('[data-g]').forEach(bx=>bx.style.display=allBtn._o?'block':'none')};ctrl.appendChild(allBtn);container.appendChild(ctrl);
   const wrap=el('div','');
   [0,1,2,3].forEach(g=>{
-    const grp=l1.filter(x=>(TORD[x.t]!=null?TORD[x.t]:3)===g);
-    if(!grp.length)return;
-    const[l,tk,em]=TCAT[g];
-    const head=el('div','sdmg-head',`${em} ${l} · ${grp.length} 模块`);head._t=head.textContent;head.style.cssText='font-weight:700;font-size:13px;color:'+(tk==='ok'?'#e04f5f':tk==='wait'?'#d4a017':tk==='bad'?'#2f9e44':'#8a94a6')+';margin:14px 0 6px;cursor:pointer;cursor:pointer';head.onclick=()=>{const bx=wrap.querySelector('[data-sdmgroup="'+g+'"]');const op=bx.style.display!=='none';bx.style.display=op?'none':'block';head.textContent=head._t+(op?' ▸ 展开':' ▾ 收起')};
+    const grp=l1.filter(x=>(TORD[x.t]!=null?TORD[x.t]:3)===g);if(!grp.length)return;
+    const[lab,tk,col]=TCAT[g];
+    const head=el('div','',`<span style="color:${col}">●</span> ${lab} · ${grp.length} 板块`);head._o=true;head.style.cssText='font-weight:700;font-size:13px;color:'+col+';margin:14px 0 4px;padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.08);cursor:pointer';head.onclick=()=>{head._o=!head._o;const bx=wrap.querySelector('[data-g=\"'+g+'\"]');if(bx)bx.style.display=head._o?'block':'none';head.style.opacity=head._o?1:.5};
     wrap.appendChild(head);
-    const box=el('div','');box.setAttribute('data-sdmgroup',g);box.style.display=(g<=0)?'block':'none';
+    const box=el('div','');box.setAttribute('data-g',g);box.style.display='block';
     grp.forEach(n1=>{
       const k2=kidsOf(n1.s);
-      const h1=el('div','sitem',`<div class="top"><span class="sdm1">⬡</span><span class="nm" style="color:${clsColor(n1.s)}">${n1.s}</span>${n1.t&&n1.t!=='other'?`<span class="tag ${tk}">${l}</span>`:''}<span class="pill">二级${k2.length}</span></div>${n1.d?`<div class="why">${String(n1.d)}</div>`:''}`);h1.style.cssText='background:rgba(255,255,255,.04);border-left:3px solid '+(tk==='ok'?'#e04f5f':tk==='wait'?'#d4a017':tk==='bad'?'#2f9e44':'#444')+';margin:6px 0 2px;padding:4px 8px;border-radius:4px';
+      const h1=el('div','sitem',`<div class="top"><span class="nm" style="color:${clsColor(n1.s)}">${n1.s}</span>${n1.t&&n1.t!=='other'?`<span class="tag ${tk}">${lab}</span>`:''}<span class="pill">二级 ${k2.length}</span></div>${n1.d?`<div class="why">${String(n1.d)}</div>`:''}`);h1.style.cssText='background:rgba(255,255,255,.04);border-left:3px solid '+col+';margin:7px 0 2px;padding:4px 8px;border-radius:4px';
       box.appendChild(h1);
-      const b2=el('div','');b2.style.cssText='margin:0 0 4px 14px';
+      const b2=el('div','');b2.style.cssText='margin:1px 0 4px 12px';
       k2.forEach(n2=>{
         const k3=kidsOf(n2.s);
-        const row=el('div','sitem',`<div class="top"><span class="nm">${String(n2.s)}</span>${n2.d?`<span class="why" style="display:inline;margin-left:8px;color:#8a94a6;font-weight:400">${String(n2.d).slice(0,70)}</span>`:''}${k3.length?`<span class="pill" style="cursor:pointer">三级 ${k3.length} ▸</span>`:''}</div>`);row.style.cssText='padding:2px 6px;border-radius:3px;font-size:12px';
-        const pill=row.querySelector('.pill');
-        const b3=el('div','');b3.style.cssText='margin-left:16px';
-        let expanded=false;
-        if(pill)pill.onclick=()=>{expanded=!expanded;if(!expanded){b3.innerHTML='';pill.textContent='三级 '+k3.length+' ▸';return}pill.textContent='三级 '+k3.length+' ▾';k3.forEach(n3=>{const c4=SDM.filter(n=>n.p===n3.s);const chip=el('div','sdm3',`${String(n3.s)}${c4.length?` <span class="c6">${c4.length}个股</span>`:''}`);chip.style.cssText='background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:2px 9px;font-size:11px;display:inline-block;margin:2px 3px;color:#cdd6e4';b3.appendChild(chip)})};
-        row.appendChild(b3);b2.appendChild(row);
+        const row=el('div','',`<div class="top"><span class="nm" style="font-size:12px">${String(n2.s)}</span>${n2.d?`<span class="why" style="display:inline;margin-left:8px;color:#8a94a6;font-weight:400;font-size:11px">${String(n2.d).slice(0,70)}</span>`:''}<span class="pill" style="font-size:10px">三级 ${k3.length}</span></div>`);row.style.cssText='padding:3px 4px;border-bottom:1px dashed rgba(255,255,255,.05)';
+        const chip3=el('div','');chip3.style.cssText='padding:3px 0 3px 14px;font-size:11px;color:#9aa7ba;display:flex;flex-wrap:wrap;gap:4px';
+        k3.forEach(n3=>{const c4c=SDM.filter(x=>x.p===n3.s).length;chip3.appendChild(el('span','',`${String(n3.s)}${c4c?` <span style="color:#5f6b7d;font-size:10px">·${c4c}</span>`:''}`))});
+        row.appendChild(chip3);b2.appendChild(row);
       });
       box.appendChild(b2);
     });
