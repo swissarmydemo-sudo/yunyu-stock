@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.13 (2026-11-10)
+     yunyu-stock · 语之策略 v1.0.14 (2026-11-10)
      数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
      分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
      登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
@@ -146,12 +146,33 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 <div class="modal-mask hidden" id="authModal">
   <div class="modal">
-    <div class="row" style="justify-content:space-between"><b style="font-size:18px">🔐 账号</b><button class="btn ghost" id="authClose">✕</button></div>
-    <p style="color:var(--dim);font-size:13px;margin:6px 0 14px">与「语之境界」同一套账号。登录后跨端同步偏好。</p>
-    <input id="authEmail" type="email" placeholder="邮箱" class="auth-input" autocomplete="email">
-    <input id="authPass" type="password" placeholder="密码(至少6位)" class="auth-input" autocomplete="current-password">
-    <div id="authMsg" style="color:var(--bad);font-size:13px;min-height:18px;margin:6px 0"></div>
-    <div class="btns"><button class="btn gold" id="authLogin" style="flex:1">登 录</button><button class="btn ghost" id="authRegister" style="flex:1">注 册</button></div>
+    <div class="row" style="justify-content:space-between"><b style="font-size:18px" id="authTitle">🔐 账号</b><button class="btn ghost" id="authClose">✕</button></div>
+    <!-- A 登录/注册 -->
+    <div id="authVLogin">
+      <p style="color:var(--dim);font-size:13px;margin:6px 0 14px">与「语之境界」同一套账号。登录后跨端同步偏好。</p>
+      <input id="authEmail" type="email" placeholder="邮箱" class="auth-input" autocomplete="email">
+      <input id="authPass" type="password" placeholder="密码(至少6位)" class="auth-input" autocomplete="current-password">
+      <div id="authMsg" style="color:var(--bad);font-size:13px;min-height:18px;margin:6px 0"></div>
+      <div class="btns"><button class="btn gold" id="authLogin" style="flex:1">登 录</button><button class="btn ghost" id="authRegister" style="flex:1">注 册</button></div>
+      <button class="btn ghost auth-link" id="authForgot" style="width:100%;margin-top:8px">忘记密码？点此重置</button>
+    </div>
+    <!-- B 修改/重置密码 -->
+    <div id="authVChangepw" style="display:none">
+      <p style="color:var(--dim);font-size:13px;margin:6px 0 14px" id="authPwSub">修改你的登录密码</p>
+      <input id="authCur" type="password" placeholder="当前密码" class="auth-input" autocomplete="current-password">
+      <input id="authNew" type="password" placeholder="新密码(至少6位)" class="auth-input" autocomplete="new-password">
+      <input id="authNew2" type="password" placeholder="再次输入新密码" class="auth-input" autocomplete="new-password">
+      <div id="authMsg2" style="color:var(--bad);font-size:13px;min-height:18px;margin:6px 0"></div>
+      <div class="btns"><button class="btn gold" id="authSavePw" style="flex:1">确认修改</button><button class="btn ghost" id="authPwBack" style="flex:1">返 回</button></div>
+      <button class="btn ghost" id="authLogout" style="width:100%;margin-top:8px">退出登录</button>
+    </div>
+    <!-- C 忘记密码 -->
+    <div id="authVForgot" style="display:none">
+      <p style="color:var(--dim);font-size:13px;margin:6px 0 14px">输入注册邮箱，我们会发送一封重置链接。</p>
+      <input id="authREmail" type="email" placeholder="注册邮箱" class="auth-input">
+      <div id="authMsg3" style="color:var(--bad);font-size:13px;min-height:18px;margin:6px 0"></div>
+      <div class="btns"><button class="btn gold" id="authSendReset" style="flex:1">发送重置链接</button><button class="btn ghost" id="authFBack" style="flex:1">返 回</button></div>
+    </div>
   </div>
 </div>
 
@@ -689,7 +710,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.13</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.14</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -698,6 +719,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.14','11-10','账号安全: 新增「修改密码」(登录后点击头像)、「忘记密码/重置」(发重置邮件, 点邮件链接回站直接设新密码), 退出登录移到账号面板'],
     ['v1.0.13','11-10','复盘Tab改为按用户持仓: 主区=你自己的持仓复盘(持仓中浮盈浮亏+今日L1+已平仓兑现+胜率/盈亏合计), owner含真实仓+模拟仓+自选三层, 体系推荐复盘折叠为通用区'],
     ['v1.0.12','11-10','板块SDM重设计: 按趋势 上行→对峙→下行→其他 分四大块, 一级/二级平铺可见三级展开; 推荐池只放推荐+买入(去卖出); 自选登记战法必填; L2承接/站点聚合战法归属分清; 用户持仓接入L1状态机生成今日推荐(site_l1_for_users每晚跑)'],
     ['v1.0.11','11-10','今日操作建议分人: 卖出/持仓信号只对当前用户自己登记的股票; owner 保留持有池份数影响的体系信号+真实仓/模拟仓两模块; 其他用户买入后仅按对应战法 L1 状态机指导(不受池份数影响); 非 owner 隐藏我仓位明细(现金/份数)'],
@@ -741,14 +763,53 @@ function renderFeedback(){
 }
 /* ===== Auth (与语之境界同源) ===== */
 function initClient(){try{if(window.supabase)DB=supabase.createClient(SB_URL,SB_ANON)}catch(e){DB=null}}
-function openAuth(){$('authMsg').textContent='';$('authModal').classList.remove('hidden')}
+function openAuth(v){showAuthView(v||(DBUSER?'pw':'login'));$('authModal').classList.remove('hidden')}
 function closeAuth(){$('authModal').classList.add('hidden')}
-async function doLogout(){try{await DB.auth.signOut()}catch(e){}DBUSER=null;authed=false;MYH=[];$('acctBtn').textContent='🔐 登录';toast&&toast('已退出');showTab(CUR)}
+let PW_RESET=false;
+function msgSet(i,txt,ok){const e=$(i);if(!e)return;e.style.color=ok?'var(--ok)':'var(--bad)';e.textContent=txt}
+function showAuthView(v){
+  $('authVLogin').style.display=v==='login'?'':'none';
+  $('authVChangepw').style.display=v==='pw'?'':'none';
+  $('authVForgot').style.display=v==='forgot'?'':'none';
+  ['authMsg','authMsg2','authMsg3'].forEach(i=>msgSet(i,''));
+  const t=$('authTitle'),st=$('authPwSub'),cur=$('authCur');
+  if(v==='forgot'){t.textContent='📮 重置密码'}
+  else if(v==='pw'){
+    t.textContent=PW_RESET?'🔑 设置新密码':'🔑 修改密码';
+    if(st)st.textContent=PW_RESET?'重置链接已验证，请设置新密码':'登录账号：'+(DBUSER?DBUSER.email:'');
+    if(cur)cur.style.display=PW_RESET?'none':'';
+  }else t.textContent='🔐 账号';
+}
+async function doChangePw(){
+  const n1=$('authNew').value,n2=$('authNew2').value,cur=$('authCur').value;
+  if(!PW_RESET&&!cur){msgSet('authMsg2','请输入当前密码');return}
+  if(!n1||n1.length<6){msgSet('authMsg2','新密码至少6位');return}
+  if(n1!==n2){msgSet('authMsg2','两次新密码不一致');return}
+  if(!PW_RESET){const{error:sx}=await DB.auth.signInWithPassword({email:DBUSER.email,password:cur});if(sx){msgSet('authMsg2','当前密码错误：'+sx.message);return}}
+  const{error}=await DB.auth.updateUser({password:n1});
+  if(error){msgSet('authMsg2','修改失败：'+error.message);return}
+  msgSet('authMsg2','✅ 密码已更新，下次用新密码登录',true);
+  ['authCur','authNew','authNew2'].forEach(i=>{const e=$(i);if(e)e.value=''});
+  PW_RESET=false;setTimeout(closeAuth,1400);
+}
+async function doSendReset(){
+  const e=$('authREmail').value.trim();if(!e){msgSet('authMsg3','请输入邮箱');return}
+  const{error}=await DB.auth.resetPasswordForEmail(e,{redirectTo:location.origin+location.pathname});
+  if(error){msgSet('authMsg3',error.message);return}
+  msgSet('authMsg3','✅ 重置链接已发送，请查收（注意垃圾箱）',true);
+}
+async function doLogout(){try{await DB.auth.signOut()}catch(e){}PW_RESET=false;DBUSER=null;authed=false;MYH=[];$('acctBtn').textContent='🔐 登录';closeAuth();toast&&toast('已退出');showTab(CUR)}
 function toast(m){const e=el('div','','');const x=el('div','banner info',m);e.appendChild(x);document.body.appendChild(e);setTimeout(()=>e.remove(),2200)}
 async function applySession(ses){const u=ses&&ses.user;if(u){DBUSER=u;authed=true;$('acctBtn').textContent='👤 '+(u.email||u.id.slice(0,6));await loadHoldings();showTab(CUR)}else{DBUSER=null;authed=false;MYH=[];AUTOH=[];SIH=[];SIMSUM={};L1T={};$('acctBtn').textContent='🔐 登录';showTab(CUR)}}
 function bindAuth(){
-  $('acctBtn').onclick=()=>{DBUSER?doLogout():openAuth()};
+  $('acctBtn').onclick=()=>{DBUSER?(PW_RESET=false,openAuth('pw')):openAuth('login')};
   $('authClose').onclick=closeAuth;
+  $('authForgot').onclick=()=>showAuthView('forgot');
+  $('authFBack').onclick=()=>showAuthView('login');
+  $('authPwBack').onclick=()=>{PW_RESET=false;closeAuth()};
+  $('authSavePw').onclick=doChangePw;
+  $('authSendReset').onclick=doSendReset;
+  $('authLogout').onclick=doLogout;
   $('authLogin').onclick=async()=>{const e=$('authEmail').value.trim(),p=$('authPass').value;$('authMsg').textContent='';if(!e||!p){$('authMsg').textContent='请填写邮箱和密码';return}const{data,error}=await DB.auth.signInWithPassword({email:e,password:p});if(error){$('authMsg').textContent=error.message;return}closeAuth();applySession(data.session)};
   $('authRegister').onclick=async()=>{const e=$('authEmail').value.trim(),p=$('authPass').value;$('authMsg').textContent='';if(!e||!p){$('authMsg').textContent='请填写邮箱和密码';return}if(p.length<6){$('authMsg').textContent='密码至少6位';return}const{data,error}=await DB.auth.signUp({email:e,password:p});if(error){$('authMsg').textContent=error.message;return}if(data.session){closeAuth();applySession(data.session)}else{$('authMsg').textContent='注册成功,请到邮箱确认后登录'}};
 }
@@ -760,7 +821,7 @@ function bindNav(){
 }
 async function init(){
   initClient();bindAuth();bindNav();
-  if(DB){try{const{data:{session}}=await DB.auth.getSession();applySession(session);DB.auth.onAuthStateChange((ev,s)=>{if(ev==='SIGNED_IN'||ev==='USER_UPDATED')applySession(s);if(ev==='SIGNED_OUT')applySession(null)})}catch(e){}}
+  if(DB){try{const{data:{session}}=await DB.auth.getSession();applySession(session);DB.auth.onAuthStateChange((ev,s)=>{if(ev==='PASSWORD_RECOVERY'){PW_RESET=true;applySession(s);showAuthView('pw');$('authModal').classList.remove('hidden')}if(ev==='SIGNED_IN'||ev==='USER_UPDATED')applySession(s);if(ev==='SIGNED_OUT')applySession(null)})}catch(e){}}
   showTab('today');
 }
 document.addEventListener('DOMContentLoaded',init);
