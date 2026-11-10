@@ -394,7 +394,7 @@ function slotsCardHTML(d){
   const wan=v=>(v==null?'---':((v/10000).toFixed(2)+'万'));
   let h='';
   // 真实盘: 指星/燎原/破晓(破晓=隔日T+1·展示昨买今卖当前持仓)
-  h+='<div class="slotacc">🏦 真实盘</div>'+_slotRow('指星',_openedNames(AUTOH,'指星'))+_slotRow('燎原',_openedNames(AUTOH,'燎原'))+_slotRow('破晓',_openedNames(AUTOH,'破晓'),false);
+  h+='<div class="slotacc">🏦 真实盘</div>'+_slotRow('指星',_openedNames(AUTOH,'指星'))+_slotRow('燎原',_openedNames(AUTOH,'燎原'))+_slotRow('破晓·3份',_openedNames(AUTOH,'破晓'),false);
   const _pxsig=_poxiaoholds(d);
   if(_pxsig.length)h+='<div class="study-note">📡 破晓今日信号(小仓验证·<b>未实盘</b>, 非持仓): '+_pxsig.join(' / ')+'</div>';
   h+='<div class="study-note">💰 真实可用 · 兴业(指星/主仓) <b>'+yin(rc.xingye)+'</b> ｜ 东财增量(燎原/增量) <b>'+yin(rc.dfcf)+'</b>'+(ly.cash_left!=null?(' ｜ 燎原池 <b>¥'+ly.cash_left+'</b>'+(ly.funds?('('+ly.funds+'份)'):'')):'')+'</div>';
@@ -403,7 +403,7 @@ function slotsCardHTML(d){
   if(ss.avail_balance!=null)h+='<div class="study-note">💰 模拟可用 <b>'+wan(ss.avail_balance)+'</b>（东财100万模拟盘共享账户）</div>';
   // 打新区
   h+='<div class="slotacc">📋 打新</div><div class="study-note">'+_daxinLine(d)+'</div>';
-  h+='<div class="slotlegend">🟩=持仓 · ⬜<span style="border:1px dashed;color:var(--dim);padding:0 2px">待买入</span>=空槽盯新票 · 🟡<span style="color:var(--gold)">机动资金</span>=指星/燎原各2份(破晓不用·不用于开新仓·盯回踩过谷买) · 破晓槽位=真实持仓(空=未实盘) · 模型信号另标「未实盘」 · 真实/模拟独立算</div>';
+  h+='<div class="slotlegend">🟩=持仓 · ⬜<span style="border:1px dashed;color:var(--dim);padding:0 2px">待买入</span>=空槽盯新票 · 🟡<span style="color:var(--gold)">机动资金</span>=指星/燎原各2份(破晓不用·不用于开新仓·盯回踩过谷买) · 破晓=资金均分3份(3等额槽·无机动·空=未实盘) · 模型信号另标「未实盘」 · 真实/模拟独立算</div>';
   return '<div class="slotgrid">'+h+'</div>';
 }
 function renderOwnerSlots(b,d){
@@ -818,7 +818,7 @@ function showTab(t){
 function renderAbout(){
   const b=$('aboutBody');b.innerHTML='';
     const VERSIONS=[
-    ['v1.0.30','11-10','更正: 破晓槽位只显示<b>真实持仓</b>(未实盘则空槽待买入), 不再把破晓模型「昨买今卖信号」误当持仓; 模型信号单独标「未实盘·非持仓」; <b>破晓不用机动资金</b>(仅指星/燎原各2份); 修正图例'],
+    ['v1.0.30','11-10','更正: 破晓槽位只显示<b>真实持仓</b>(未实盘则空槽待买入), 不再把破晓模型「昨买今卖信号」误当持仓; 模型信号单独标「未实盘·非持仓」; <b>破晓不用机动资金</b>(仅指星/燎原各2份), 破晓=资金均分3份(3等额槽); 修正图例'],
     ['v1.0.29','11-10','槽位卡补齐四战法: 真实盘新增<b>破晓</b>槽位(隔日T+1·展示昨买今卖当前持仓+机动弹药), 新增<b>📋打新</b>区(申购记录: 名称/板块/状态/中签); 与指星/燎原四战法齐平, 真实/模拟独立算'],
     ['v1.0.28','11-10','战法槽位可视化+SDM覆盖: ①自选&复盘共用「槽位网格」——每战法3槽(持仓🟩/空槽⬜待买入)+机动资金🟡显式2份, 真实/模拟独立算+资金; ②复盘SDM未覆盖修复——持仓个股无三级下钻时兜底到申万板块级SDM(板块链趋势+驱动), 不再显示「未覆盖」'],
     ['v1.0.27','11-10','修复复盘场景卡「当日方向」排版: 不再把 zhixing.summary 一行糊死(买/卖/补/日期/代码挤一块), 按 / 拆段成彩色pill分行展示——买🟢绿/卖🔴红/补📌中性, 场景卡更清爽(场景标签改flex行,修复高pill与下方「当日方向」重叠)'],
