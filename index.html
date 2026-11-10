@@ -521,8 +521,11 @@ function renderStrategies(d, body){
   if(ly.buy_rank_top5&&ly.buy_rank_top5.length){
     c2.appendChild(el('div','tier','浓缩池 Top5',0));
     const tb=el('table','',`<tr><th>代码</th><th>rfl</th><th>预测30日</th><th>价</th><th>量(亿)</th><th>最新</th></tr>`);
-    ly.buy_rank_top5.forEach(r=>{const ret=retOf(d,r.code,r.price);const q=(d.ret||{})[String(r.code).slice(-6)];tb.appendChild(el('tr','',`<td>${r.code}${bp(r.code)}</td><td>${r.rfl}</td><td>${(r.pred_ret30*100).toFixed(1)}%</td><td>${r.price}${minibtn(r.code,'',r.price,'燎原')}</td><td>${r.amount_亿}</td><td>${q&&q.price?(fmtp(ret)):'-'}</td>`))});
+    /* 2026-11-10 Frank: 当日买入信号已在上面单独展示, Top5 里不再重复列出 → 排除同一只 */
+    const bsCode=ly.buy_signal?String(ly.buy_signal.code).slice(-6):null;
+    ly.buy_rank_top5.filter(r=>bsCode?String(r.code).slice(-6)!==bsCode:true).forEach(r=>{const ret=retOf(d,r.code,r.price);const q=(d.ret||{})[String(r.code).slice(-6)];tb.appendChild(el('tr','',`<td>${r.code}${bp(r.code)}</td><td>${r.rfl}</td><td>${(r.pred_ret30*100).toFixed(1)}%</td><td>${r.price}${minibtn(r.code,'',r.price,'燎原')}</td><td>${r.amount_亿}</td><td>${q&&q.price?(fmtp(ret)):'-'}</td>`))});
     c2.appendChild(tb);
+    if(bsCode)c2.appendChild(el('div','study-note','Top5 已除去当日买入信号(见上), 避免同一只重复。',0));
   }
   if(ly.sell_signals&&ly.sell_signals.length){
     c2.appendChild(el('div','tier','🔴 卖出信号',0));
@@ -593,7 +596,7 @@ function renderReview(d, body){
     if(ret!=null){totR+=ret;nR++}
   };
   (d.poxiao.recs||[]).forEach(r=>collate('破晓',r.code,r.name,r.price,'tag '+r.tag));
-  ((d.liaoyuan||{}).buy_rank_top5||[]).forEach(r=>collate('燎原',r.code,'',r.price,'池'+'' ));
+  ((d.liaoyuan||{}).buy_rank_top5||[]).filter(r=>!((d.liaoyuan||{}).buy_signal)||String(r.code).slice(-6)!==String(d.liaoyuan.buy_signal.code).slice(-6)).forEach(r=>collate('燎原',r.code,'',r.price,'池'+'' ));
   if((d.liaoyuan||{}).buy_signal)collate('燎原',d.liaoyuan.buy_signal.code,'',d.liaoyuan.buy_signal.price,'买入信号');
   /* 表 */
   body.appendChild(sectH3('📈 推荐日后表现(最新价 vs 推荐价)', d, 'ret'));
