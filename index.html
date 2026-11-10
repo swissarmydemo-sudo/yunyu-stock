@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.15 (2026-11-10)
+     yunyu-stock · 语之策略 v1.0.16 (2026-11-10)
      数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
      分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
      登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
@@ -696,7 +696,7 @@ function renderHist(show){if(show==null||show===true){renderEnv(DAYS[DATE_LIST[H
 let TODAYI=DATE_LIST.length-1;
 function renderToday(){renderEnv(DAYS[DATE_LIST[TODAYI]],$('envBody'));renderStrategies(DAYS[DATE_LIST[TODAYI]],$('strategyBody'))}
 /* ===== 复盘选择器 ===== */
-function fillReviewSel(){const s=$('rvDate');if(!s)return;s.innerHTML='';DATE_LIST.forEach((d,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=d;s.appendChild(o)});s.value='0'}
+function fillReviewSel(){const s=$('rvDate');if(!s)return;s.innerHTML='';DATE_LIST.forEach((d,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=d;s.appendChild(o)});s.value=String(DATE_LIST.length-1)}
 /* ===== Tab ===== */
 function showTab(t){
   CUR=t;
@@ -707,7 +707,7 @@ function showTab(t){
   if(t==='watch')renderWatch(DAYS[DATE_LIST[TODAYI]]);
   if(t==='sdm')renderSdm(DAYS[DATE_LIST[TODAYI]]);
   if(t==='history'){HISTI=DATE_LIST.length-1;fillHistSel();renderHist()}
-  if(t==='review'){renderReview(DAYS[DATE_LIST[0]],$('reviewBody'));fillReviewSel();const sel=$('rvDate');if(sel)sel.onchange=()=>renderReview(DAYS[DATE_LIST[+sel.value]],$('reviewBody'))}
+  if(t==='review'){renderReview(DAYS[DATE_LIST[DATE_LIST.length-1]],$('reviewBody'));fillReviewSel();const sel=$('rvDate');if(sel)sel.onchange=()=>renderReview(DAYS[DATE_LIST[+sel.value]],$('reviewBody'))}
   if(t==='feedback')renderFeedback();
   if(t==='about')renderAbout();
 }
@@ -717,7 +717,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.15</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.16</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -726,6 +726,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.16','11-10','修复复盘Tab默认停在最早一天(10-23): 改为默认最新交易日; 复盘日期选择器同步默认最新'],
     ['v1.0.15','11-10','自选/持仓登记智能带出: 填代码自动补名称、填名称自动补代码(内置全A股5687只词典+当日数据兜底)'],
     ['v1.0.14','11-10','账号安全: 新增「修改密码」(登录后点击头像)、「忘记密码/重置」(发重置邮件, 点邮件链接回站直接设新密码), 退出登录移到账号面板'],
     ['v1.0.13','11-10','复盘Tab改为按用户持仓: 主区=你自己的持仓复盘(持仓中浮盈浮亏+今日L1+已平仓兑现+胜率/盈亏合计), owner含真实仓+模拟仓+自选三层, 体系推荐复盘折叠为通用区'],
