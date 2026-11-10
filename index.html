@@ -422,7 +422,7 @@ function renderEnv(d, body){
       }
       if(lyb||lyrank.length){
         cly.appendChild(el('div','tier',(ly.dry?'📈 模拟盘':'🟢 ')+'买入信号 · 浓缩池起势',0));
-        if(lyb)cly.appendChild(el('div','sitem',`<div class="top"><span class="nm">${NM(lyb.name,lyb.code)}</span>${bp(lyb.code)}<span class="tag ok">买入</span><span class="pill">参考 ${lyb.price}</span>${(lyb.pred_ret30!=null)?('<span class="pill">预测30日 +'+Math.round((lyb.pred_ret30||0)*10000)/100+'%</span>'):''}<span class="pill">现金 ${ly.cash_left}</span></div>`));
+        if(lyb)cly.appendChild(el('div','sitem',`<div class="top"><span class="nm">${NM(lyb.name,lyb.code)}</span>${bp(lyb.code)}<span class="tag ok">买入</span><span class="pill">参考 ${lyb.price}</span>${(lyb.pred_ret30!=null)?('<span class="pill">预测30日 +'+Math.round((lyb.pred_ret30||0)*10000)/100+'%</span>'):''}${isOwner()?('<span class="pill">现金 '+ly.cash_left+'</span>'):''}</div>`));
         else lyrank.forEach(r=>cly.appendChild(el('div','sitem',`<div class="top"><span class="nm">${NM(r.name,r.code)}</span>${bp(r.code)}<span class="pill">rfl ${r.rfl}</span>${(r.pred_ret30!=null)?('<span class="pill">预测30日 +'+Math.round((r.pred_ret30||0)*10000)/100+'%</span>'):''}<span class="pill">${r.price}</span></div>`)));
       }
       if(ly.src_date)cly.appendChild(el('div','study-note','📅 信号来源: 前一夜('+ly.src_date+') 22:05 生成 · 适用于今日。',0));
@@ -495,7 +495,7 @@ function renderStrategies(d, body){
   if(ly.buy_signal){
     const s=ly.buy_signal;
     const ret=retOf(d,s.code,s.price);
-    c2.appendChild(el('div','sitem',`<div class="top"><span class="nm">${s.code}</span>${bp(s.code)}<span class="tag ok">买入信号</span>${minibtn(s.code,'',s.price,'燎原')}<span class="pill">价格 ${s.price}</span><span class="pill">rfl ${s.rfl}</span><span class="pill">预测30日 ${s.pred_ret30}</span><span class="pill">量 ${s.amount_亿}亿</span></div><div class="why">现金 ${ly.cash_left} · 持仓上限 ${ly.maxpos}/${ly.funds?('份/'+ly.funds):''} ${ret!=null?(' · 最新价 <b>'+(d.ret||{})[String(s.code).slice(-6)].price+'</b> <span class="'+(ret>0?'up':'down')+'">'+fmtp(ret)+'</span>(自推荐)'):''}</div>`));
+    c2.appendChild(el('div','sitem',`<div class="top"><span class="nm">${s.code}</span>${bp(s.code)}<span class="tag ok">买入信号</span>${minibtn(s.code,'',s.price,'燎原')}<span class="pill">价格 ${s.price}</span><span class="pill">rfl ${s.rfl}</span><span class="pill">预测30日 ${s.pred_ret30}</span><span class="pill">量 ${s.amount_亿}亿</span></div><div class="why">${isOwner()?('现金 '+ly.cash_left+' · 持仓上限 '+ly.maxpos+(ly.funds?('份/'+ly.funds):'')):''}${ret!=null?(' · 最新价 <b>'+(d.ret||{})[String(s.code).slice(-6)].price+'</b> <span class="'+(ret>0?'up':'down')+'">'+fmtp(ret)+'</span>(自推荐)'):''}</div>`));
   }
   if(ly.buy_rank_top5&&ly.buy_rank_top5.length){
     c2.appendChild(el('div','tier','浓缩池 Top5',0));
