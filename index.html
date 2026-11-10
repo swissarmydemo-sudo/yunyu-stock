@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.21 (2026-11-10)
+     yunyu-stock · 语之策略 v1.0.22 (2026-11-10)
      数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
      分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
      登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
@@ -655,18 +655,32 @@ function renderReviewClosed(cont,d,h){const r=realizedOf(h);
 }
 function renderSystemReview(body,d){
   const rows=[];let totR=0,nR=0;
-  const collate=(label,code,name,refPrice,extra)=>{if(!refPrice)return;const ret=retOf(d,code,refPrice);rows.push({label,code,name,refPrice,ret,extra});if(ret!=null){totR+=ret;nR++}};
-  (d.poxiao.recs||[]).forEach(r=>collate('破晓',r.code,r.name,r.price,'tag '+r.tag));
-  ((d.liaoyuan||{}).buy_rank_top5||[]).filter(r=>!((d.liaoyuan||{}).buy_signal)||String(r.code).slice(-6)!==String(((d.liaoyuan||{}).buy_signal&&d.liaoyuan.buy_signal.code)||'').slice(-6)).forEach(r=>collate('燎原',r.code,'',r.price,'池'));
-  if((d.liaoyuan||{}).buy_signal)collate('燎原',d.liaoyuan.buy_signal.code,'',d.liaoyuan.buy_signal.price,'买入信号');
-  body.appendChild(el('div','',`<button class="btn ghost" style="margin:10px 0 4px;font-size:11px;padding:4px 10px" onclick="toggleList(this)" data-t="📈 体系推荐复盘(全市场通用) · ${rows.length} 条">▸ 📈 体系推荐复盘(全市场通用) · ${rows.length} 条</button>`));
+  const c6=s=>String(s==null?'':s).replace(/\D/g,'').slice(-6);
+  const collate=(label,code,name,refPrice,extra)=>{const ret=(refPrice!=null)?retOf(d,code,refPrice):null;rows.push({label,code:c6(code),name:name||'',refPrice,ret,extra});if(ret!=null){totR+=ret;nR++}};
+  const z=d.zhixing||{};
+  (z.buy||[]).forEach(r=>collate('指星',r.code,r.name,r.ref_price!=null?r.ref_price:null,(r.sdm_rec&&r.sdm_rec.tag)?(r.sdm_rec.tag+' '+(r.sdm_rec.action||'')):'建仓'));
+  (z.hold||[]).forEach(r=>collate('指星·持有',r.code,r.name,r.ref_price!=null?r.ref_price:null,'持有'));
+  const ly=d.liaoyuan||{};
+  const sigC=ly.buy_signal?c6(ly.buy_signal.code):'';
+  (ly.buy_rank_top5||[]).forEach(r=>collate('燎原',r.code,r.name,r.price,(c6(r.code)===sigC)?'买入信号':'池'));
+  if(ly.buy_signal&&sigC&&!(ly.buy_rank_top5||[]).some(r=>c6(r.code)===sigC))collate('燎原',sigC,ly.buy_signal.name,ly.buy_signal.price,'买入信号');
+  ((d.poxiao||{}).recs||[]).forEach(r=>collate('破晓',r.code,r.name,r.price,r.tag||''));
+  body.appendChild(el('div','',`<button class="btn ghost" style="margin:10px 0 4px;font-size:11px;padding:4px 10px" onclick="toggleList(this)" data-t="📈 体系推荐复盘(四战法) · ${rows.length} 条">▸ 📈 体系推荐复盘(四战法) · ${rows.length} 条</button>`));
   const bx=el('div','');bx.style.display='none';
   if(rows.length){
-    const tb=el('table','',`<tr><th>战法</th><th>标的</th><th>推荐价</th><th>最新价</th><th>收益</th></tr>`);
-    rows.forEach(r=>{const q=(d.ret||{})[String(r.code).slice(-6)];tb.appendChild(el('tr','',`<td>${r.label}</td><td>${NM(r.name,r.code)}${bp(r.code)}</td><td>${r.refPrice}</td><td>${q&&q.price?q.price:'-'}</td><td class="${r.ret!=null?retCls(r.ret):'flat'}">${r.ret!=null?fmtp(r.ret):'-'}</td>`))});
+    const tb=el('table','',`<tr><th>战法</th><th>推荐日期</th><th>标的</th><th>推荐价</th><th>当日价</th><th>收益</th></tr>`);
+    rows.forEach(r=>{const q=(d.ret||{})[c6(r.code)];tb.appendChild(el('tr','',`<td>${r.label}${r.extra?('<span class="pill" style="font-size:10px;margin-left:4px">'+r.extra+'</span>'):''}</td><td style="font-size:11px;color:var(--dim)">${d.date}</td><td>${NM(r.name,r.code)}${bp(r.code)}</td><td>${r.refPrice!=null?r.refPrice:'-'}</td><td>${q&&q.price?q.price:'-'}</td><td class="${r.ret!=null?retCls(r.ret):'flat'}">${r.ret!=null?fmtp(r.ret):'-'}</td>`))});
     bx.appendChild(tb);
-    if(nR)bx.appendChild(el('div','card',`当日 <b>${rows.length}</b> 只推荐 · 有最新价 ${nR} 只 · 平均收益 <b class="${retCls(totR/nR)}">${fmtp(totR/nR)}</b>`,0));
+    if(nR)bx.appendChild(el('div','card',`当日 <b>${rows.length}</b> 只推荐 · 有当日价 ${nR} 只 · 平均收益 <b class="${retCls(totR/nR)}">${fmtp(totR/nR)}</b>`,0));
   }else bx.appendChild(el('div','study-note','当日无体系推荐可复盘。',0));
+  const dx=d.daxin||{};
+  const dxRows=[].concat(dx.applied||[],dx.upcoming||[]);
+  if(dxRows.length){
+    bx.appendChild(sectH3('🎫 打新 · 申购记录', d, 'daxin'));
+    const t2=el('table','',`<tr><th>标的</th><th>申购日</th><th>发行价</th><th>状态</th></tr>`);
+    dxRows.slice(0,10).forEach(r=>{t2.appendChild(el('tr','',`<td>${NM(r.name,r.code)}${bp(r.code)}</td><td style="font-size:11px;color:var(--dim)">${r.apply_date||'-'}</td><td>${r.issue_price!=null?r.issue_price:'-'}</td><td>${r.won?'🎉中签':(r.status||'-')}</td>`))});
+    bx.appendChild(t2);
+  }
   const rc=(d.poxiao||{}).reconcile||[];
   if(rc.length){
     bx.appendChild(sectH3('📋 破晓 · 实际兑现对账', d, 'poxiao'));
@@ -747,7 +761,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.21</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.22</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -756,6 +770,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.22','11-10','体系推荐复盘补全四战法: +指星(建仓/持有)+打新(申购记录: 申购日/发行价/状态/中签); 燎原补名称; 全部标的名称+代码; 加推荐日期列'],
     ['v1.0.21','11-10','修复折叠块点不开: toggleList找按钮兄弟节点, 但按钮被包在wrapper div里找不到内容盒, 兼容两种挂法(历史深度复盘/体系推荐复盘/已平仓等全部修复)'],
     ['v1.0.20','11-10','历史深度复盘补全: 之前只抓复盘_*漏了29篇深度复盘_*, 现共64篇(8-04起, 含胜败总结/深度归因/交付报告/完整范围基准)'],
     ['v1.0.19','11-10','复盘Tab补上日期选择条(前一曰/后一日+下拉, 与历史Tab同款): 之前JS有rvDate逻辑但HTML没放选择器, 复盘只能看最新一天'],
