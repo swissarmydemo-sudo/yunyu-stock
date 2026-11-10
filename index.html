@@ -527,10 +527,6 @@ function renderStrategies(d, body){
     c2.appendChild(tb);
     if(bsCode)c2.appendChild(el('div','study-note','Top5 已除去当日买入信号(见上), 避免同一只重复。',0));
   }
-  if(ly.sell_signals&&ly.sell_signals.length){
-    c2.appendChild(el('div','tier','🔴 卖出信号',0));
-    ly.sell_signals.forEach(s=>c2.appendChild(el('div','sitem',`<div class="top"><span class="nm">${NM(s.name,s.code)}</span>${s.is_sim?'<span class="pill">模拟盘</span>':''}<span class="pill" style="color:var(--gold);font-weight:700">燎原</span><span class="tag bad">卖出</span></div><div class="why">${s.why||''} · 收益 ${(s.ret!=null?fmtp(s.ret*100):'-')}</div>`)));
-  }
   if(!ly.buy_signal&&!(ly.buy_rank_top5||[]).length)c2.appendChild(el('div','study-note','燎原为长期低频战法,当日无新买入信号。',0));
   body.appendChild(c2);
   /* -- 破晓(隔日超短) -- */
