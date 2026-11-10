@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.5 (2026-11-10)
+     yunyu-stock · 语之策略 v1.0.6 (2026-11-10)
      数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
      分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
      登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
@@ -261,18 +261,19 @@ function renderAutoH(b,d,h,closed){
 }
 function l1For(d,h){
   const c=h.code;const z=d.zhixing||{};
-  let real=null;
+  /* 主账号主仓信号(仅 owner) */
   if(isOwner()){
-    if((z.sell||[]).some(x=>String(x.code).slice(-6)===c))real='🔴 主仓卖出信号:'+((z.sell.find(x=>String(x.code).slice(-6)===c)||{}).verdict||'按纪律离场');
-    else if((z.hold||[]).some(x=>String(x.code).slice(-6)===c))real='👀 主仓持有:'+((z.hold.find(x=>String(x.code).slice(-6)===c)||{}).verdict||'持有');
-    else if((z.buy||[]).some(x=>String(x.code).slice(-6)===c))real='🟢 指星今日推荐买入';
+    if((z.sell||[]).some(x=>String(x.code).slice(-6)===c))return '🔴 主仓卖出信号:'+((z.sell.find(x=>String(x.code).slice(-6)===c)||{}).verdict||'按纪律离场')+' · '+stratDesc(h.strat||'指星')+'。';
+    if((z.hold||[]).some(x=>String(x.code).slice(-6)===c))return '👀 主仓持有:'+((z.hold.find(x=>String(x.code).slice(-6)===c)||{}).verdict||'持有')+' · '+stratDesc(h.strat||'指星')+'。';
   }
-  if(real)return real+' · '+stratDesc(h.strat||'指星')+'。';
+  /* 普适战法信号(所有登录用户): 指星推荐买入 */
+  if((z.buy||[]).some(x=>String(x.code).slice(-6)===c))return '🟢 指星今日推荐买入 · '+stratDesc(h.strat||'指星')+'。';
+  /* 破晓在池 */
   const px=(d.poxiao.recs||[]).find(x=>String(x.code).slice(-6)===c);
   if(px)return '今日破晓在池:'+(px.name||c)+' · 预测高开+'+px.pred_gap+'% · '+(px.sell_rule||'T尾盘买、T1开盘卖')+'。';
+  /* 燎原在池 */
   const ly=(d.liaoyuan||{}).buy_rank_top5||[]; if(ly.some(x=>String(x.code).slice(-6)===c))return '今日燎原浓缩池在列 · 约持30天。';
-  const etf=((z.theme_etf&&(z.theme_etf['强板块']||z.theme_etf['弱板块']))||[]);
-  return stratDesc(h.strat||'自选')+' 持仓跟踪中。';
+  return stratDesc(h.strat||'自选')+' 持仓跟踪中, 暂无该股新信号。';
 }
 /* -- 板块 SDM(独立) -- */
 function renderSdm(d){
@@ -334,17 +335,23 @@ function renderEnv(d, body){
   /* 今日摘要(主仓方向状态机·仅主账号) */
   const z=d.zhixing||{};
   if(z.summary&&isOwner())body.appendChild(el('div','card',`📋 ${z.summary}${(z.source)?' <span style="color:var(--dim);font-size:12px">· '+z.source+'</span>':''}`,0));
-  /* 今日目标 · 操作区间(个股操作建议仅主账号) */
-  body.appendChild(sectH3('🎯 今日目标 · 操作区间', d, 'ops'));
-  if(!isOwner()){body.appendChild(lockCard('个股操作区间仅主账号可见；其他用户请用「自选」跟踪自己的票'))}
+  /* 我的操作建议 · 按每个账户自己的持仓/自选生成(每人不同) */
+  body.appendChild(sectH3('🎯 我的操作建议', d, 'ops'));
+  if(!authed){body.appendChild(lockCard('登录后按你的持仓/自选生成操作建议'))}
   else{
+    const mine=AUTOH.filter(h=>(h.shares||0)>0&&!h.sell_price).concat(MYH.filter(h=>!h.sell_price));
     const op=el('div','card');
-    (d.ops||[]).forEach(t=>{
-      const code6=String(t.code||'').replace(/\D/g,'').slice(-6);
-      let vc=t.verdict||'';let cl=t.verdict&&t.verdict.includes('回避')?'bad':(t.verdict&&t.verdict.includes('买')?'ok':'wait');
-      op.appendChild(el('div','sitem',`<div class="top"><span class="nm">${t.name||t.code}</span>${bp(t.code)}<span class="tag ${cl}">${vc||t.deciding||''}</span>${t.sector?`<span class="pill">${t.sector}</span>`:''}${minibtn(code6,t.name,t.buy_zone?t.buy_zone.replace(/[^\d.]/g,''):'',t.strategy||'指星')}</div><div class="why">${(t.buy_zone||'')?('买入区:<b>'+t.buy_zone+'</b> · '):''}${(t.stop_loss||'')?('止损:<b>'+t.stop_loss+'</b>'):''}</div>${(t.reasons||t.deciding)?`<div class="why">${t.reasons||t.deciding}</div>`:''}`));
-    });
-    if(!(d.ops||[]).length)op.appendChild(el('div','study-note','当日无今日目标(或未生成)。',0));
+    if(!mine.length){op.appendChild(el('div','study-note','你还没有持仓/自选 → 去「🎒 自选」添加, 或从「推荐池」点「+」一键加入; 系统会按你的买入价+对应战法给指导。',0))}
+    else{
+      mine.forEach(h=>{
+        const c6=String(h.code).slice(-6);
+        const q=(d.ret||{})[c6];const cur=(q&&q.price)||h.last||0;const cost=h.cost||0;
+        const pnl=(cur&&cost)?((cur-cost)/cost*100):null;
+        let advice=l1For(d,h);
+        if(pnl!=null){if(pnl<=-10)advice='⚠️ 浮亏 '+fmtp(pnl)+' · 逼近止损 · '+advice;else if(pnl>=12)advice='🏆 '+fmtp(pnl)+' 浮盈 · 关注止盈 · '+advice;}
+        op.appendChild(el('div','sitem',`<div class="top"><span class="nm">${h.name||h.code}</span>${bp(h.code)}<span class="board">${h.strat||'自选'}</span>${h.acct?('<span class="pill">'+h.acct+'</span>'):''}${cost?('<span class="pill">买价 '+cost+'</span>'):''}${cur?('<span class="pill">现价 '+cur+'</span>'):''}${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}</div><div class="why">💡 ${advice}</div>`));
+      });
+    }
     body.appendChild(op);
   }
   /* 主仓信号(仅主账号) */
@@ -426,6 +433,16 @@ function renderStrategies(d, body){
   if(dx.listed&&dx.listed.length){any=true;c4.appendChild(el('div','tier','📈 已上市',0));dx.listed.forEach(a=>c4.appendChild(el('div','sitem',`<div class="top"><span class="nm">${a.name} (${a.code})</span></div><div class="why">上市价 ${a.list_price||'-'} · 现价 ${a.price||'-'} ${a.ret!=null?fmtp(a.ret):''}</div>`)))}
   if(!any)c4.appendChild(el('div','study-note','打新台账暂无申购中新股。',0));
   body.appendChild(c4);
+  /* -- 今日目标 · 操作区间(指星目标价·普适推荐) -- */
+  body.appendChild(el('div','tier','🎯 今日目标 · 操作区间(指星目标价)',0));
+  const opt=el('div','card');
+  (d.ops||[]).forEach(t=>{
+    const code6=String(t.code||'').replace(/\D/g,'').slice(-6);
+    const vc=t.verdict||'';const cl=vc.includes('回避')?'bad':(vc.includes('买')?'ok':'wait');
+    opt.appendChild(el('div','sitem',`<div class="top"><span class="nm">${t.name||t.code}</span>${bp(t.code)}<span class="tag ${cl}">${vc||t.deciding||''}</span>${t.sector?`<span class="pill">${t.sector}</span>`:''}${minibtn(code6,t.name,t.buy_zone?t.buy_zone.replace(/[^\d.]/g,''):'',t.strategy||'指星')}</div><div class="why">${(t.buy_zone||'')?('买入区:<b>'+t.buy_zone+'</b> · '):''}${(t.stop_loss||'')?('止损:<b>'+t.stop_loss+'</b>'):''}</div>${(t.reasons||t.deciding)?`<div class="why">${t.reasons||t.deciding}</div>`:''}`));
+  });
+  if(!(d.ops||[]).length)opt.appendChild(el('div','study-note','当日无今日目标(或未生成)。',0));
+  body.appendChild(opt);
 }
 /* ===== 复盘 ===== */
 function renderReview(d, body){
@@ -488,7 +505,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.5</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.6</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -497,6 +514,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.6','11-10','操作建议改为<b>按每个账户自己的持仓/自选逐股生成</b>(主账号=自动对接真实持仓, 其他用户=手动自选), 每人不同; 指星目标价(操作区间)归入推荐池(普适); 未登录净屏只留场景+SDM'],
     ['v1.0.5','11-10','未登录净屏: 隐藏主仓方向状态机(买/卖/维持)、建仓冻结(槽位)、复盘当日方向、场景内部复盘备注 — 仅登录/主账号可见; 未登录只留场景+置信度+SDM+情绪闸门'],
     ['v1.0.4','11-10','主账号真实持仓<b>战法自动对接</b>: 体系每晚自动同步 Frank 真实持仓(兴业/东财)到「我的仓位·真实持仓(只读)」, 每股标注战法+浮亏/止盈, 命中当日卖出/持有信号时 L1 高亮提示; 其他账号仍用<b>手动自选</b>'],
     ['v1.0.3','11-10','信息分层:<b>推荐池普适</b>(所有登录用户同看每日推荐股+点评)+<b>个股操作建议仅主账号</b>(frankdyuan@petalmail.com)+<b>每人自选跟踪</b>(选战法·记买入价/时间·卖出价/时间复盘·收对应战法L1指导) · 每个战法加<b>策略说明</b> · 板块SDM<b>独立成Tab</b>(推荐池/自选/板块SDM三Tab) · 指星不再嵌套燎原'],
