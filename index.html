@@ -281,7 +281,7 @@ function renderWatch(d){
   /* 加自选表单 */
   const form=el('div','card');
   form.appendChild(el('div','tier','+ 加自选(可从推荐池点「+」一键加入)',0));
-  form.appendChild(el('div','',`<div style="display:flex;gap:6px;flex-wrap:wrap"><input id="wCode" class="fld" placeholder="代码" style="width:76px"><input id="wName" class="fld" placeholder="名称" style="flex:1;min-width:64px"><select id="wStrat" class="fld" style="flex:1;min-width:84px"><option value="指星">指星·主仓中长期</option><option value="燎原">燎原·长期低频</option><option value="破晓">破晓·隔日超短</option><option value="打新">打新</option><option value="ETF">ETF</option></select><input id="wPrice" class="fld" placeholder="买入价" style="width:74px"><input id="wDate" class="fld" placeholder="买入日(留空=今天)" style="width:120px"><span class="minibtn">-</span></div><div style="display:flex;gap:6px;margin-top:6px"><input id="wShares" class="fld" placeholder="股数" style="width:76px"><button class="btn" id="wAdd" style="flex:1">+ 加入自选</button></div>`));
+  form.appendChild(el('div','',`<div style="display:flex;gap:6px;flex-wrap:wrap"><input id="wCode" class="fld" placeholder="代码" style="width:76px"><input id="wName" class="fld" placeholder="名称" style="flex:1;min-width:64px"><select id="wStrat" class="fld" style="flex:1;min-width:84px" title="必选: 决定用哪个战法的L1状态机给今日推荐"><option value="">— 选择战法(必填) —</option><option value="指星">指星·主仓中长期</option><option value="燎原">燎原·长期低频</option><option value="破晓">破晓·隔日超短</option><option value="打新">打新</option><option value="ETF">ETF</option></select><input id="wPrice" class="fld" placeholder="买入价" style="width:74px"><input id="wDate" class="fld" placeholder="买入日(留空=今天)" style="width:120px"><span class="minibtn">-</span></div><div style="display:flex;gap:6px;margin-top:6px"><input id="wShares" class="fld" placeholder="股数" style="width:76px"><button class="btn" id="wAdd" style="flex:1">+ 加入自选</button></div>`));
   b.appendChild(form);
   const open=MYH.filter(h=>!h.sell_price), closed=MYH.filter(h=>h.sell_price);
   /* 持仓中 */
@@ -304,7 +304,7 @@ function renderWatch(d){
     b.appendChild(box);
   }
   /* 表单绑定 */
-  setTimeout(()=>{const a=$('wAdd');if(a)a.onclick=()=>{const c=$('wCode').value.trim(),n=$('wName').value.trim(),s=$('wStrat').value,p=$('wPrice').value.trim(),da=$('wDate').value.trim(),sh=$('wShares').value.trim();const c6=c.replace(/\D/g,'').slice(-6);if(c6.length!==6){toast('请填6位代码');return}const now=new Date();MYH.push({code:c6,name:n||c6,strat:s,shares:(+sh)||0,cost:(+p)||0,buy_time:(da||now.toISOString().slice(0,10)),added:now.toISOString().slice(0,10)});saveHoldings().then(()=>showTab('watch'));toast('已加入自选')}},0);
+  setTimeout(()=>{const a=$('wAdd');if(a)a.onclick=()=>{const c=$('wCode').value.trim(),n=$('wName').value.trim(),s=$('wStrat').value,p=$('wPrice').value.trim(),da=$('wDate').value.trim(),sh=$('wShares').value.trim();const c6=c.replace(/\D/g,'').slice(-6);if(c6.length!==6){toast('请填6位代码');return}if(!s){toast('战法必选: 决定该股走哪个战法的 L1 状态机');return}const now=new Date();MYH.push({code:c6,name:n||c6,strat:s,shares:(+sh)||0,cost:(+p)||0,buy_time:(da||now.toISOString().slice(0,10)),added:now.toISOString().slice(0,10)});saveHoldings().then(()=>showTab('watch'));toast('已加入自选')}},0);
 }
 /* 主账号真实持仓(自动对接·只读)渲染; closed=已平仓/清零(折叠显示,按卖出价算实际盈亏) */
 function renderAutoH(cont,d,h,closed){
