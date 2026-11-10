@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.6 (2026-11-10)
+     yunyu-stock · 语之策略 v1.0.7 (2026-11-10)
      数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
      分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
      登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
@@ -242,7 +242,7 @@ function renderWatch(d){
     b.appendChild(el('div','tier','🏁 已平仓 · 复盘 ('+closed.length+')',0));
     closed.forEach(h=>{
       const pnl=(h.cost&&h.sell_price)?((h.sell_price-h.cost)/h.cost*100):null;
-      b.appendChild(el('div','sitem',`<div class="top"><span class="nm">${h.name||h.code}</span>${bp(h.code)}<span class="board">${h.strat||''}</span><span class="pill">买 ${h.cost}</span><span class="pill">卖 ${h.sell_price}</span><span class="pill">卖时 ${h.sell_time||''}</span>${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}<span class="minibtn" onclick="delHolding('${h.code}')">✕"</span></div>`));
+      b.appendChild(el('div','sitem',`<div class="top"><span class="nm">${h.name||h.code}</span>${bp(h.code)}<span class="board">${h.strat||''}</span><span class="pill">买 ${h.cost}</span><span class="pill">卖 ${h.sell_price}</span><span class="pill">卖时 ${h.sell_time||''}</span>${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}<span class="minibtn" onclick="delHolding('${h.code}')">✕</span></div>`));
     });
   }
   /* 表单绑定 */
@@ -353,6 +353,7 @@ function renderEnv(d, body){
       });
     }
     body.appendChild(op);
+    body.appendChild(el('div','study-note','📌 每只逐股 L1 指导; 完整买卖/卖出登记与复盘在「🎒 自选」。',0));
   }
   /* 主仓信号(仅主账号) */
   if(isOwner()){
@@ -374,18 +375,8 @@ function renderStrategies(d, body){
   body.appendChild(el('div','study-note',stratDesc('指星'),0));
   const z=d.zhixing||{};
   const c1=el('div','card');
-  if(!z.buy&&!z.theme_etf&&!z.summary){c1.appendChild(el('div','study-note','当日指星推荐未生成。',0))}
+  if(!z.buy&&!z.summary){c1.appendChild(el('div','study-note','当日指星推荐未生成。',0))}
   if(z.buy&&z.buy.length){c1.appendChild(el('div','tier','🟢 推荐买入',0));z.buy.forEach(it=>{const h='<div class="top"><span class="nm">'+(it.name||it.code)+'</span>'+bp(it.code)+'<span class="tag ok">买入</span>'+(it.strategy?('<span class="pill">'+it.strategy+'</span>'):'')+minibtn(it.code,it.name,0,'指星')+'</div><div class="why">'+(it.verdict||it.trigger||'')+'</div>';c1.appendChild(el('div','sitem',h))})}
-  if(z.theme_etf&&(z.theme_etf['强板块']||z.theme_etf['弱板块'])){
-    const t=z.theme_etf;
-    c1.appendChild(el('div','tier','🌐 ETF 主题'+(t.mode?(' · '+t.mode):''),0));
-    const etfRow=(arr,label)=>{if(arr&&arr.length){c1.appendChild(el('div','',label,0));arr.forEach(e=>{const m=String(e.etf||'').match(/\d{6}/);const code6=m?m[0]:'';c1.appendChild(el('div','sitem',`<div class="top"><span class="nm">${e.板块||''}</span>${code6?(`<span class="board">ETF</span><span class="pill">${e.etf||''}</span>`):''}<span class="pill">${e.score!=null?e.score:''}</span>${minibtn(code6,e.etf||e.板块,0,'ETF')}</div><div class="why">${e['信号']||e.signal||''}${e.r20!=null?(' · R20 '+e.r20+'%'):''}</div>`))})}};
-    if(t['强板块'])etfRow(t['强板块'],'🟢 强板块');
-    if(t['弱板块'])etfRow(t['弱板块'],'⚪ 弱板块');
-    if(t['不可买·代替ETF']&&t['不可买·代替ETF'].length)etfRow(t['不可买·代替ETF'],'🚫 不可买·替代'),0;
-    if(t['纪律'])c1.appendChild(el('div','study-note','纪律:'+t['纪律'],0));
-    if(t['隔夜风险']&&t['隔夜风险'].triggered)c1.appendChild(el('div','banner bad','隔夜风险触发:'+(t['隔夜风险'].reason||''),0));
-  }
   body.appendChild(c1);
   /* -- 燎原(长期低频) -- */
   body.appendChild(el('div','tier','2 燎原 · 长期低频(30天)'+(d._meta&&d._meta.liaoyuan?(' · 🕐 '+fmtTS(d._meta.liaoyuan)):''),0));
@@ -433,6 +424,21 @@ function renderStrategies(d, body){
   if(dx.listed&&dx.listed.length){any=true;c4.appendChild(el('div','tier','📈 已上市',0));dx.listed.forEach(a=>c4.appendChild(el('div','sitem',`<div class="top"><span class="nm">${a.name} (${a.code})</span></div><div class="why">上市价 ${a.list_price||'-'} · 现价 ${a.price||'-'} ${a.ret!=null?fmtp(a.ret):''}</div>`)))}
   if(!any)c4.appendChild(el('div','study-note','打新台账暂无申购中新股。',0));
   body.appendChild(c4);
+  /* -- ETF 主题方向(独立, 不挂指星下) -- */
+  body.appendChild(el('div','tier','5 ETF 主题方向'+(d._meta&&d._meta.zhixing?(' · 🕐 '+fmtTS(d._meta.zhixing)):''),0));
+  body.appendChild(el('div','study-note',stratDesc('ETF'),0));
+  const ce=el('div','card');
+  if(z.theme_etf&&(z.theme_etf['强板块']||z.theme_etf['弱板块'])){
+    const t=z.theme_etf;
+    if(t.mode)ce.appendChild(el('div','banner info','模式:'+t.mode,0));
+    const etfRow=(arr,label)=>{if(arr&&arr.length){ce.appendChild(el('div','',label,0));arr.forEach(e=>{const m=String(e.etf||'').match(/\d{6}/);const code6=m?m[0]:'';ce.appendChild(el('div','sitem',`<div class="top"><span class="nm">${e.板块||''}</span>${code6?(`<span class="board">ETF</span><span class="pill">${e.etf||''}</span>`):''}<span class="pill">${e.score!=null?e.score:''}</span>${minibtn(code6,e.etf||e.板块,0,'ETF')}</div><div class="why">${e['信号']||e.signal||''}${e.r20!=null?(' · R20 '+e.r20+'%'):''}</div>`))})}};
+    if(t['强板块'])etfRow(t['强板块'],'🟢 强板块');
+    if(t['弱板块'])etfRow(t['弱板块'],'⚪ 弱板块');
+    if(t['不可买·代替ETF']&&t['不可买·代替ETF'].length)etfRow(t['不可买·代替ETF'],'🚫 不可买·替代');
+    if(t['纪律'])ce.appendChild(el('div','study-note','纪律:'+t['纪律'],0));
+    if(t['隔夜风险']&&t['隔夜风险'].triggered)ce.appendChild(el('div','banner bad','隔夜风险触发:'+(t['隔夜风险'].reason||''),0));
+  }else ce.appendChild(el('div','study-note','当日无 ETF 主题方向。',0));
+  body.appendChild(ce);
   /* -- 今日目标 · 操作区间(指星目标价·普适推荐) -- */
   body.appendChild(el('div','tier','🎯 今日目标 · 操作区间(指星目标价)',0));
   const opt=el('div','card');
@@ -505,7 +511,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.6</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.7</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -514,6 +520,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.7','11-10','ETF 主题方向独立成板块(第5栏), 不再挂在指星推荐下面(修 Frank 反馈) · 今日「我的操作建议」加完整跟踪去自选指针'],
     ['v1.0.6','11-10','操作建议改为<b>按每个账户自己的持仓/自选逐股生成</b>(主账号=自动对接真实持仓, 其他用户=手动自选), 每人不同; 指星目标价(操作区间)归入推荐池(普适); 未登录净屏只留场景+SDM'],
     ['v1.0.5','11-10','未登录净屏: 隐藏主仓方向状态机(买/卖/维持)、建仓冻结(槽位)、复盘当日方向、场景内部复盘备注 — 仅登录/主账号可见; 未登录只留场景+置信度+SDM+情绪闸门'],
     ['v1.0.4','11-10','主账号真实持仓<b>战法自动对接</b>: 体系每晚自动同步 Frank 真实持仓(兴业/东财)到「我的仓位·真实持仓(只读)」, 每股标注战法+浮亏/止盈, 命中当日卖出/持有信号时 L1 高亮提示; 其他账号仍用<b>手动自选</b>'],
