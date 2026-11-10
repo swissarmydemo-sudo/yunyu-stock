@@ -366,7 +366,7 @@ function _slotLine(nm,zx,ly){
   return `<div class="top" style="margin:5px 0;flex-wrap:wrap"><span class="nm" style="min-width:74px">${nm}</span>`+
     `<span title="指星·3槽建仓" style="white-space:nowrap"><b>指星</b> ${_slotMeter(zx,3)} <span class="pill">${zx}/3 ${zx>=3?'满':('空'+(3-zx)+'盯新票')}</span></span>`+
     `<span title="燎原·3槽建仓" style="white-space:nowrap"><b>燎原</b> ${_slotMeter(ly,3)} <span class="pill">${ly}/3 ${ly>=3?'满':('空'+(3-ly)+'盯新票')}</span></span>`+
-    `<span class="pill" style="color:var(--gold);white-space:nowrap" title="机动弹药·盯回踩过谷买·不用于开新仓">弹药2份·回踩接回</span></div>`;
+    `<span class="pill" style="color:var(--gold);white-space:nowrap" title="指星/燎原各2份机动弹药·盯回踩过谷买·不用于开新仓">弹药·指星2份·燎原2份</span></div>`;
 }
 function renderOwnerSlots(b,d){
   d=d||{}; const rc=d._realcash||{}; const ly=d.liaoyuan||{}; const ss=SIMSUM||{};
@@ -378,7 +378,7 @@ function renderOwnerSlots(b,d){
   card.appendChild(el('div','study-note','💰 真实可用 · 兴业(指星/主仓) <b>'+yin(rc.xingye)+'</b> ｜ 东财增量(燎原/增量) <b>'+yin(rc.dfcf)+'</b> ｜ 燎原池 <b>'+(ly.cash_left!=null?('¥'+ly.cash_left):'---')+'</b>'+(ly.funds?('('+ly.funds+'份)'):'')));
   card.appendChild(_slotLine('📈 模拟盘',_wCount(SIH,'指星'),_wCount(SIH,'燎原')));
   if(ss.avail_balance!=null)card.appendChild(el('div','study-note','💰 模拟可用 <b>'+wan(ss.avail_balance)+'</b>(东财100万模拟盘共享账户)'));
-  card.appendChild(el('div','study-note','建仓槽盯新票 · 机动弹药2份盯回踩过谷买(不用于开新仓) · 真实/模拟独立算。',0));
+  card.appendChild(el('div','study-note','建仓槽盯新票 · 指星/燎原各2份机动弹药(不用于开新仓·各盯回踩过谷买) · 真实/模拟独立算。',0));
   b.appendChild(card);
 }
 function renderOwnerSlotsCompact(body,d){
@@ -387,7 +387,7 @@ function renderOwnerSlotsCompact(body,d){
   let s='🧩 槽位 · 🏦真 指星<strong>'+_wCount(AUTOH,'指星')+'/3</strong>·燎原<strong>'+_wCount(AUTOH,'燎原')+'/3</strong> ｜ 📈模拟 指星<strong>'+_wCount(SIH,'指星')+'/3</strong>·燎原<strong>'+_wCount(SIH,'燎原')+'/3</strong>';
   if(ss.avail_balance!=null)s+=' ｜ 💰模拟可用<strong>'+wan(ss.avail_balance)+'</strong>';
   if(ly.cash_left!=null)s+=' · 燎原池¥'+ly.cash_left;
-  s+=' · 弹药2份(回踩接回)';
+  s+=' · 弹药 指星2·燎原2';
   body.appendChild(el('div','banner info',s,0));
 }
 function l1verdict(code,strat){
