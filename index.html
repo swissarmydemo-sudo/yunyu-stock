@@ -73,6 +73,12 @@ select{background:var(--card);color:var(--txt);border:1px solid var(--line);bord
 .footer-note{font-size:12px;color:var(--dim);text-align:center;padding:16px 0 4px;border-top:1px dashed var(--line);margin-top:10px;line-height:1.7}
 .footer-note b{color:var(--gold)}
 .risk-chip{font-size:11.5px;color:var(--bad);border:1px solid rgba(239,71,111,.4);background:rgba(239,71,111,.08);border-radius:10px;padding:5px 11px;margin-top:8px;display:inline-block}
+.board{font-size:10px;color:var(--gold);border:1px solid rgba(255,194,75,.35);border-radius:6px;padding:1px 5px;margin-left:6px;vertical-align:middle;white-space:nowrap;flex:none}
+.minibtn{font-size:12px;color:var(--gold);border:1px solid rgba(255,194,75,.4);border-radius:6px;padding:0 6px;cursor:pointer;margin-left:auto;flex:none;background:transparent}
+.minibtn:hover{background:rgba(255,194,75,.15)}
+.fld{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:8px;color:var(--tt);padding:7px 8px;font-size:12px;outline:none;box-sizing:border-box}
+.fld:focus{border-color:rgba(255,194,75,.5)}
+.lockpad{text-align:center;padding:22px 12px}
 .vlog{margin:10px 0 2px;padding-left:14px;border-left:2px solid var(--line)}
 .vrow{display:flex;gap:8px;margin:12px 0;align-items:flex-start}
 .vbadge{flex:none;font-size:11px;font-weight:700;color:var(--gold);border:1px solid rgba(255,194,75,.4);border-radius:8px;padding:2px 7px;background:rgba(255,194,75,.08);min-width:44px;text-align:center}
@@ -91,7 +97,7 @@ select{background:var(--card);color:var(--txt);border:1px solid var(--line);bord
     <button data-tab="strategy">🎯 今日战法</button>
     <button data-tab="history">📜 历史</button>
     <button data-tab="review">⚡ 快速复盘</button>
-    <button data-tab="about">ℹ️ 关于</button>
+    <button data-tab="about">i️ 关于</button>
   </nav>
 
   <div id="tab-today" class="hidden"><div id="envBody"></div></div>
@@ -107,7 +113,7 @@ select{background:var(--card);color:var(--txt);border:1px solid var(--line);bord
   </div>
   <div id="tab-review" class="hidden"><div id="reviewBody"></div></div>
   <div id="tab-about" class="hidden"><div id="aboutBody"></div></div>
-  <div class="footer-note">⚠️ <b>股市有风险，投资需谨慎</b> · 本站内容均为你个人量化研究体系之记录，仅供研究参考，<b>不构成任何投资建议</b>。</div>
+  <div class="footer-note">⚠️ <b>股市有风险,投资需谨慎</b> · 本站内容均为你个人量化研究体系之记录,仅供研究参考,<b>不构成任何投资建议</b>。</div>
 </div>
 
 <div class="modal-mask hidden" id="authModal">
@@ -115,7 +121,7 @@ select{background:var(--card);color:var(--txt);border:1px solid var(--line);bord
     <div class="row" style="justify-content:space-between"><b style="font-size:18px">🔐 账号</b><button class="btn ghost" id="authClose">✕</button></div>
     <p style="color:var(--dim);font-size:13px;margin:6px 0 14px">与「语之境界」同一套账号。登录后跨端同步偏好。</p>
     <input id="authEmail" type="email" placeholder="邮箱" class="auth-input" autocomplete="email">
-    <input id="authPass" type="password" placeholder="密码（至少6位）" class="auth-input" autocomplete="current-password">
+    <input id="authPass" type="password" placeholder="密码(至少6位)" class="auth-input" autocomplete="current-password">
     <div id="authMsg" style="color:var(--bad);font-size:13px;min-height:18px;margin:6px 0"></div>
     <div class="btns"><button class="btn gold" id="authLogin" style="flex:1">登 录</button><button class="btn ghost" id="authRegister" style="flex:1">注 册</button></div>
   </div>
@@ -130,7 +136,8 @@ const LANG_COLOR={};
 /* ===== Supabase (与语之境界同一账号) ===== */
 const SB_URL="https://ridzzptbvirtpunltucb.supabase.co";
 const SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpZHp6cHRidmlydHB1bmx0dWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQyMzQyNzAsImV4cCI6MjEwOTgxMDI3MH0.QF6IeeRRG4K5WlYh-Lj1X5YyMFg6vQyIK7Mrtimpnu4";
-let DB=null,DBUSER=null;
+let DB=null,DBUSER=null,authed=false,MYH=[];
+const HSTORE='stock_holdings';
 function $(id){return document.getElementById(id)}
 function el(t,c,h){const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e}
 function fmtp(n){if(n==null||isNaN(n))return '';const s=(n>0?'+':'')+n.toFixed(2)+'%';return s}
@@ -139,10 +146,57 @@ function clsColor(c){const d=String(c).slice(-6);return '#'+d}
 function retOf(day,code,refPrice){const q=(day.ret||{})[String(code).slice(-6)];if(!q||!q.price||!refPrice)return null;return (q.price/refPrice-1)*100}
 function fmtTS(s){if(!s)return'';const m=String(s).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);if(!m)return String(s).slice(0,16);return `${m[2]}-${m[3]} ${m[4]}:${m[5]}`}
 function sectH3(label,d,key){return el('h3','',label+(d._meta&&d._meta[key]?`<span style="float:right;font-weight:400;font-size:11px;color:var(--dim);padding-right:4px">🕐 ${fmtTS(d._meta[key])}</span>`:''),0)}
-/* —— SDM 板块四级树下钻渲染 —— */
+/* -- 股票板块分类(沪主板/深主板/创业板/科创板/北交所/ETF) -- */
+function boardOf(code){
+  const c=String(code).replace(/\D/g,'').slice(-6);
+  if(!c||c.length!==6)return '';
+  if(c.startsWith('688')||c.startsWith('689'))return'科创板';
+  if(c.startsWith('300')||c.startsWith('301'))return'创业板';
+  if(c.startsWith('51')||c.startsWith('56')||c.startsWith('58'))return'ETF·沪';
+  if(c.startsWith('15')||c.startsWith('16'))return'ETF·深';
+  if(c.startsWith('60'))return'沪主板';
+  if(c.startsWith('00'))return'深主板';
+  if(c.startsWith('8')||c.startsWith('4')||c.startsWith('92'))return'北交所';
+  return'';
+}
+function bp(code){const b=boardOf(code);return b?`<span class="board">${b}</span>`:''}
+function minibtn(code,name,price){const c=String(code).replace(/\D/g,'').slice(-6);if(!c||c.length!==6)return'';return`<span class="minibtn" onclick="addHolding('${c}','${String(name||'').replace(/'/g,'')}','${price||0}')">+</span>`}
+/* -- 每账号持仓(云端) -- */
+async function loadHoldings(){MYH=[];if(!(DB&&DBUSER))return;try{const{data}=await DB.from(HSTORE).select('data').eq('id',DBUSER.id).maybeSingle();MYH=(data&&data.data&&data.data.holdings)||[]}catch(e){MYH=[]}}
+async function saveHoldings(){if(!(DB&&DBUSER))return;try{await DB.from(HSTORE).upsert({id:DBUSER.id,data:{holdings:MYH},updated_at:new Date().toISOString()},{onConflict:'id'})}catch(e){console.log(e)}}
+function addHolding(code,name,price){
+  if(!authed){openAuth();return}
+  const c=String(code).replace(/\D/g,'').slice(-6);if(c.length!==6){toast('代码无效');return}
+  if(MYH.some(h=>h.code===c)){toast('已在持仓中');return}
+  const p=parseFloat(price);const now=new Date();
+  MYH.push({code:c,name:name||c,shares:0,cost:isFinite(p)&&p>0?p:0,added:now.toISOString().slice(0,10)});
+  saveHoldings().then(()=>showTab(CUR));toast('已加入我的持仓');
+}
+function delHolding(code){MYH=MYH.filter(h=>h.code!==code);saveHoldings().then(()=>showTab(CUR))}
+function lockCard(tip){
+  const c=el('div','card');
+  c.appendChild(el('div','lockpad',`<div style="font-size:30px;opacity:.5">🔒</div><div style="font-size:14px;font-weight:700;margin:8px 0">${tip||'登录后查看'}</div><div style="font-size:12px;color:var(--dim);margin-bottom:14px">推荐池明细、ETF方向、持仓、历史复盘需登录解锁</div><button class="btn" onclick="openAuth()">🔐 立即登录 / 注册</button>`));
+  return c;
+}
+let CUR='today';
+/* -- 我的持仓卡片 -- */
+function renderHoldings(d){
+  const card=el('div','card');
+  if(!authed){card.appendChild(el('div','lockpad',`<div style="font-size:28px;opacity:.5">🔒</div><div style="font-weight:700;margin:8px 0">登录后管理你的持仓</div><div style="font-size:12px;color:var(--dim);margin-bottom:12px">你的持仓只属于你,随账号云端保存,与他人不同</div><button class="btn" onclick="openAuth()">🔐 登录 / 注册</button>`));return card}
+  const form=el('div','',`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><input id="hCode" class="fld" placeholder="代码" style="width:76px"><input id="hName" class="fld" placeholder="名称" style="flex:1;min-width:72px"><input id="hShares" class="fld" placeholder="股数" style="width:62px"><input id="hCost" class="fld" placeholder="成本" style="width:62px"><button class="btn" id="hAdd" style="flex:none">+加仓</button></div>`);
+  card.appendChild(form);
+  if(MYH&&MYH.length){
+    MYH.forEach(h=>{const q=(d.ret||{})[h.code];const cur=q&&q.price;const pnl=(cur&&h.cost)?((cur-h.cost)/h.cost*100):null;
+      card.appendChild(el('div','sitem',`<div class="top"><span class="nm">${h.name||h.code}</span>${bp(h.code)}${h.cost?('<span class="pill">成本 '+h.cost+'</span>'):''}${h.shares?('<span class="pill">'+h.shares+'股</span>'):''}${cur?('<span class="pill">现价 '+cur+'</span>'):''}${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}<span class="minibtn" onclick="delHolding('${h.code}')">✕</span></div><div class="why">加入 ${h.added}${d._meta&&d._meta.ret?(' · 行情更新 '+fmtTS(d._meta.ret)):''}</div>`));
+    });
+  }else card.appendChild(el('div','study-note','你还没有持仓。点推荐行的「+」一键加入,或上方手动添加。',0));
+  setTimeout(()=>{const b=$('hAdd');if(b)b.onclick=()=>{const c=$('hCode').value.trim(),n=$('hName').value.trim(),s=$('hShares').value.trim(),k=$('hCost').value.trim();const c6=c.replace(/\D/g,'').slice(-6);if(c6.length!==6){toast('请填6位代码');return}if(MYH.some(x=>x.code===c6)){toast('已在持仓');return}const now=new Date();MYH.push({code:c6,name:n||c6,shares:(+s)||0,cost:(+k)||0,added:now.toISOString().slice(0,10)});saveHoldings().then(()=>showTab(CUR));$('hCode').value=$('hName').value=$('hShares').value=$('hCost').value='';toast('已加入持仓')}},0);
+  return card;
+}
+/* -- SDM 板块四级树下钻渲染 -- */
 function renderSdmTree(container){
   if(!SDM||!SDM.length){container.appendChild(el('div','study-note','板块台账未载入。'));return}
-  container.appendChild(el('div','study-note','板块四级台账（'+SDM.length+' 节点）：一级=板块 · 二级=子板块 · 三级=申万行业 · 四级=个股。点 ▸ 逐级展开。',0));
+  container.appendChild(el('div','study-note','板块四级台账('+SDM.length+' 节点):一级=板块 · 二级=子板块 · 三级=申万行业 · 四级=个股。点 ▸ 逐级展开。',0));
   const roots=SDM.filter(n=>(n.l==='一级'));
   const mkItem=(node,dep)=>{
     const item=el('div','sitem',`<div class="top" style="padding-left:${dep*14}px"><span class="nm" style="color:${clsColor(node.s)}">${node.s}</span><span class="pill">${node.l}</span></div>${node.d?`<div class="why">${node.d}</div>`:''}`);
@@ -193,90 +247,101 @@ function renderEnv(d, body){
     sd.appendChild(el('div','tier',g,0));
     const bad={status:'弱',reson:'',score:0};
     items.slice(0,14).forEach(it=>{
-      sd.appendChild(el('div','sitem',`<div class="top"><span class="nm" style="color:${clsColor(it.sector)}">${it.sector}</span><span class="pill ${it.status.includes('空')?'v':(it.status.includes('上行')?'s':'w')}">${it.status}</span><span class="why">强度：${it.strength||'-'}</span></div>`));
+      sd.appendChild(el('div','sitem',`<div class="top"><span class="nm" style="color:${clsColor(it.sector)}">${it.sector}</span><span class="pill ${it.status.includes('空')?'v':(it.status.includes('上行')?'s':'w')}">${it.status}</span><span class="why">强度:${it.strength||'-'}</span></div>`));
     });
-    if(items.length>14)sd.appendChild(el('div','study-note',`…另有 ${items.length-14} 个板块（共 ${items.length}）`,0));
+    if(items.length>14)sd.appendChild(el('div','study-note',`...另有 ${items.length-14} 个板块(共 ${items.length})`,0));
   });
   if(!Object.keys(sp).length)sd.appendChild(el('div','study-note','当日 SDM 面板未生成。',0));
   /* 四级板块树下钻 */
   const tw=el('div','');
-  const tg=el('button','btn ghost','🗂️ 板块四级树（一级→二级→三级→个股）▸');tg.style.marginTop='8px';tg.style.width='100%';
+  const tg=el('button','btn ghost','🗂️ 板块四级树(一级→二级→三级→个股)▸');tg.style.marginTop='8px';tg.style.width='100%';
   const tb=el('div','');tb.style.display='none';
-  tg.onclick=()=>{const open=tb.style.display==='block';tb.style.display=open?'none':'block';tg.textContent=open?'🗂️ 板块四级树（一级→二级→三级→个股）▸':'🗂️ 板块四级树（一级→二级→三级→个股）▾';if(!open&&!tb.children.length)renderSdmTree(tb)};
+  tg.onclick=()=>{const open=tb.style.display==='block';tb.style.display=open?'none':'block';tg.textContent=open?'🗂️ 板块四级树(一级→二级→三级→个股)▸':'🗂️ 板块四级树(一级→二级→三级→个股)▾';if(!open&&!tb.children.length)renderSdmTree(tb)};
   tw.appendChild(tg);tw.appendChild(tb);sd.appendChild(tw);
   body.appendChild(sd);
-  /* 操作建议(持仓 verdict) */
-  body.appendChild(sectH3('🎬 操作建议 · 持仓', d, 'ops'));
-  const op=el('div','card');
-  if(d.ops&&d.ops.length){
-    op.appendChild(el('div','slist','',0));
-    d.ops.forEach(t=>{
+  /* 我的持仓(每账号独立) */
+  body.appendChild(sectH3('🎒 我的持仓', d, 'ret'));
+  body.appendChild(renderHoldings(d));
+  /* 今日目标 · 操作建议(登录可见) */
+  body.appendChild(sectH3('🎯 今日目标 · 操作建议', d, 'ops'));
+  if(!authed){body.appendChild(lockCard('登录查看今日目标与操作区间'))}
+  else{
+    const op=el('div','card');
+    (d.ops||[]).forEach(t=>{
+      const code6=String(t.code||'').replace(/\D/g,'').slice(-6);
       let vc=t.verdict||'';let cl=t.verdict&&t.verdict.includes('回避')?'bad':(t.verdict&&t.verdict.includes('买')?'ok':'wait');
-      op.appendChild(el('div','sitem',`<div class="top"><span class="nm">${t.name||t.code}</span><span class="tag ${cl}">${vc||t.deciding||''}</span>${t.sector?`<span class="pill">${t.sector}</span>`:''}</div><div class="why">${(t.buy_zone||'')?('买入区：<b>'+t.buy_zone+'</b> · '):''}${(t.stop_loss||'')?('止损：<b>'+t.stop_loss+'</b>'):''}</div>${(t.reasons||t.deciding)?`<div class="why">${t.reasons||t.deciding}</div>`:''}`));
+      op.appendChild(el('div','sitem',`<div class="top"><span class="nm">${t.name||t.code}</span>${bp(t.code)}<span class="tag ${cl}">${vc||t.deciding||''}</span>${t.sector?`<span class="pill">${t.sector}</span>`:''}${minibtn(code6,t.name,t.buy_zone?t.buy_zone.replace(/[^\d.]/g,''):'')}</div><div class="why">${(t.buy_zone||'')?('买入区:<b>'+t.buy_zone+'</b> · '):''}${(t.stop_loss||'')?('止损:<b>'+t.stop_loss+'</b>'):''}</div>${(t.reasons||t.deciding)?`<div class="why">${t.reasons||t.deciding}</div>`:''}`));
     });
-  }else op.appendChild(el('div','study-note','当日无持仓操作建议（或未生成）。',0));
-  body.appendChild(op);
+    if(!(d.ops||[]).length)op.appendChild(el('div','study-note','当日无今日目标(或未生成)。',0));
+    body.appendChild(op);
+  }
   /* 指星关键告警(闸门/情绪) */
   const z=d.zhixing||{};
-  if(z.sentiment_gate&&z.sentiment_gate.verdict)body.appendChild(el('div','banner '+(String(z.sentiment_gate.verdict).includes('冰点')?'info':'wait'),'🧊 情绪闸门：'+z.sentiment_gate.verdict+(z.sentiment_gate.note?(' · '+z.sentiment_gate.note):''),0));
-  if(z.buy_frozen&&z.buy_frozen.reason)body.appendChild(el('div','banner wait','⏸️ 建仓冻结：'+z.buy_frozen.reason,0));
+  if(z.sentiment_gate&&z.sentiment_gate.verdict)body.appendChild(el('div','banner '+(String(z.sentiment_gate.verdict).includes('冰点')?'info':'wait'),'🧊 情绪闸门:'+z.sentiment_gate.verdict+(z.sentiment_gate.note?(' · '+z.sentiment_gate.note):''),0));
+  if(z.buy_frozen&&z.buy_frozen.reason)body.appendChild(el('div','banner wait','⏸️ 建仓冻结:'+z.buy_frozen.reason,0));
   if(z.summary)body.appendChild(el('div','card',`📋 ${z.summary}${(z.source)?' <span style="color:var(--dim);font-size:12px">· '+z.source+'</span>':''}`,0));
 }
 /* ===== 战法推荐 ===== */
 function renderStrategies(d, body){
   body.innerHTML='';
   const today=d.date;
+  if(!authed){body.appendChild(sectH3('🎯 四大战法 · '+today, d, 'ret'));body.appendChild(lockCard('登录查看四大战法推荐池'));body.appendChild(el('div','banner info','公开可见「今日环境」的场景与板块。登录后解锁全部推荐池、ETF方向、操作建议与复盘。',0));return}
   body.appendChild(sectH3('🎯 四大战法 · '+today, d, 'ret'));
-  /* —— 指星(主仓中长期) —— */
-  body.appendChild(el('div','tier','① 指星 · 主仓中长期'+(d._meta&&d._meta.zhixing?(' · 🕐 '+fmtTS(d._meta.zhixing)):''),0));
+  /* -- 指星(主仓中长期) -- */
+  body.appendChild(el('div','tier','1 指星 · 主仓中长期'+(d._meta&&d._meta.zhixing?(' · 🕐 '+fmtTS(d._meta.zhixing)):''),0));
   const z=d.zhixing||{};
   const c1=el('div','card');
   if(!z.buy&&!z.sell&&!z.hold&&!z.summary){c1.appendChild(el('div','study-note','当指日星任务未生成。',0))}
-  if(z.buy&&z.buy.length){c1.appendChild(el('div','tier','🟢 买入',0));z.buy.forEach(it=>{const h='<div class="top"><span class="nm">'+(it.name||it.code)+'</span><span class="tag ok">买入</span>'+(it.strategy?('<span class="pill">'+it.strategy+'</span>'):'')+'</div><div class="why">'+(it.verdict||it.trigger||'')+'</div>';c1.appendChild(el('div','sitem',h))})}
-  if(z.sell&&z.sell.length){c1.appendChild(el('div','tier','🔴 卖出',0));z.sell.forEach(it=>{const h='<div class="top"><span class="nm">'+(it.name||it.code)+'</span><span class="tag bad">卖出</span>'+(it.strategy?('<span class="pill">'+it.strategy+'</span>'):'')+'<span class="pill">'+(it.market||'')+'</span></div><div class="why">'+(it.verdict||'')+((it.trigger&&it.trigger!==it.verdict)?(' · '+it.trigger):'')+'</div>';c1.appendChild(el('div','sitem',h))})}
-  if(z.hold&&z.hold.length){c1.appendChild(el('div','tier','👀 持有',0));z.hold.forEach(it=>{const h='<div class="top"><span class="nm">'+(it.name||it.code)+'</span><span class="tag wait">持有</span></div><div class="why">'+(it.verdict||'')+'</div>';c1.appendChild(el('div','sitem',h))})}
-  if(z.theme_etf){
+  if(z.buy&&z.buy.length){c1.appendChild(el('div','tier','🟢 推荐买入',0));z.buy.forEach(it=>{const h='<div class="top"><span class="nm">'+(it.name||it.code)+'</span>'+bp(it.code)+'<span class="tag ok">买入</span>'+(it.strategy?('<span class="pill">'+it.strategy+'</span>'):'')+minibtn(it.code,it.name,0)+'</div><div class="why">'+(it.verdict||it.trigger||'')+'</div>';c1.appendChild(el('div','sitem',h))})}
+  if(z.sell&&z.sell.length){c1.appendChild(el('div','tier','🔴 主仓卖出信号',0));z.sell.forEach(it=>{const h='<div class="top"><span class="nm">'+(it.name||it.code)+'</span>'+bp(it.code)+'<span class="tag bad">卖出</span>'+(it.strategy?('<span class="pill">'+it.strategy+'</span>'):'')+'<span class="pill">'+(it.market||'')+'</span></div><div class="why">'+(it.verdict||'')+((it.trigger&&it.trigger!==it.verdict)?(' · '+it.trigger):'')+'</div>';c1.appendChild(el('div','sitem',h))})}
+  if(z.hold&&z.hold.length){c1.appendChild(el('div','tier','👀 主仓持有',0));z.hold.forEach(it=>{const h='<div class="top"><span class="nm">'+(it.name||it.code)+'</span>'+bp(it.code)+'<span class="tag wait">持有</span></div><div class="why">'+(it.verdict||'')+'</div>';c1.appendChild(el('div','sitem',h))})}
+  if(z.theme_etf&&(z.theme_etf['强板块']||z.theme_etf['弱板块'])){
     const t=z.theme_etf;
-    c1.appendChild(el('div','tier','ETF 主题',0));
-    c1.appendChild(el('div','sitem',`<div class="why">强板块：<b>${t['强板块']||'-'}</b></div><div class="why">弱板块：<b>${t['弱板块']||'-'}</b></div><div class="why">不可买·代替ETF：<b>${t['不可买·代替ETF']||'-'}</b></div>`));
+    c1.appendChild(el('div','tier','🌐 ETF 主题'+(t.mode?(' · '+t.mode):''),0));
+    const etfRow=(arr,label)=>{if(arr&&arr.length){c1.appendChild(el('div','',label,0));arr.forEach(e=>{const m=String(e.etf||'').match(/\d{6}/);const code6=m?m[0]:'';c1.appendChild(el('div','sitem',`<div class="top"><span class="nm">${e.板块||''}</span>${code6?(`<span class="board">ETF</span><span class="pill">${e.etf||''}</span>`):''}<span class="pill">${e.score!=null?e.score:''}</span>${minibtn(code6,e.etf||e.板块,0)}</div><div class="why">${e['信号']||e.signal||''}${e.r20!=null?(' · R20 '+e.r20+'%'):''}</div>`))})}};
+    if(t['强板块'])etfRow(t['强板块'],'🟢 强板块');
+    if(t['弱板块'])etfRow(t['弱板块'],'⚪ 弱板块');
+    if(t['不可买·代替ETF']&&t['不可买·代替ETF'].length)etfRow(t['不可买·代替ETF'],'🚫 不可买·替代'),0;
+    if(t['纪律'])c1.appendChild(el('div','study-note','纪律:'+t['纪律'],0));
+    if(t['隔夜风险']&&t['隔夜风险'].triggered)c1.appendChild(el('div','banner bad','隔夜风险触发:'+(t['隔夜风险'].reason||''),0));
   }
-  if(z.liaoyuan_summary)c1.appendChild(el('div','study-note','燎原(指星内嵌)：'+z.liaoyuan_summary,0));
+  if(z.liaoyuan_summary)c1.appendChild(el('div','study-note','燎原(指星内嵌):'+z.liaoyuan_summary,0));
   body.appendChild(c1);
-  /* —— 燎原(长期低频) —— */
-  body.appendChild(el('div','tier','② 燎原 · 长期低频(30天)'+(d._meta&&d._meta.liaoyuan?(' · 🕐 '+fmtTS(d._meta.liaoyuan)):''),0));
+  /* -- 燎原(长期低频) -- */
+  body.appendChild(el('div','tier','2 燎原 · 长期低频(30天)'+(d._meta&&d._meta.liaoyuan?(' · 🕐 '+fmtTS(d._meta.liaoyuan)):''),0));
   const c2=el('div','card');
   const ly=d.liaoyuan||{};
   if(ly.buy_signal){
     const s=ly.buy_signal;
     const ret=retOf(d,s.code,s.price);
-    c2.appendChild(el('div','sitem',`<div class="top"><span class="nm">${s.code}</span><span class="tag ok">买入信号</span><span class="pill">价格 ${s.price}</span><span class="pill">rfl ${s.rfl}</span><span class="pill">预测30日 ${s.pred_ret30}</span><span class="pill">量 ${s.amount_亿}亿</span></div><div class="why">现金 ${ly.cash_left} · 持仓上限 ${ly.maxpos}/${ly.funds?('份/'+ly.funds):''} ${ret!=null?(' · 最新价 <b>'+(d.ret||{})[String(s.code).slice(-6)].price+'</b> <span class="'+(ret>0?'up':'down')+'">'+fmtp(ret)+'</span>（自推荐）'):''}</div>`));
+    c2.appendChild(el('div','sitem',`<div class="top"><span class="nm">${s.code}</span>${bp(s.code)}<span class="tag ok">买入信号</span>${minibtn(s.code,'',s.price)}<span class="pill">价格 ${s.price}</span><span class="pill">rfl ${s.rfl}</span><span class="pill">预测30日 ${s.pred_ret30}</span><span class="pill">量 ${s.amount_亿}亿</span></div><div class="why">现金 ${ly.cash_left} · 持仓上限 ${ly.maxpos}/${ly.funds?('份/'+ly.funds):''} ${ret!=null?(' · 最新价 <b>'+(d.ret||{})[String(s.code).slice(-6)].price+'</b> <span class="'+(ret>0?'up':'down')+'">'+fmtp(ret)+'</span>(自推荐)'):''}</div>`));
   }
   if(ly.buy_rank_top5&&ly.buy_rank_top5.length){
     c2.appendChild(el('div','tier','浓缩池 Top5',0));
     const tb=el('table','',`<tr><th>代码</th><th>rfl</th><th>预测30日</th><th>价</th><th>量(亿)</th><th>最新</th></tr>`);
-    ly.buy_rank_top5.forEach(r=>{const ret=retOf(d,r.code,r.price);const q=(d.ret||{})[String(r.code).slice(-6)];tb.appendChild(el('tr','',`<td>${r.code}</td><td>${r.rfl}</td><td>${(r.pred_ret30*100).toFixed(1)}%</td><td>${r.price}</td><td>${r.amount_亿}</td><td>${q&&q.price?(fmtp(ret)):'-'}</td>`))});
+    ly.buy_rank_top5.forEach(r=>{const ret=retOf(d,r.code,r.price);const q=(d.ret||{})[String(r.code).slice(-6)];tb.appendChild(el('tr','',`<td>${r.code}${bp(r.code)}</td><td>${r.rfl}</td><td>${(r.pred_ret30*100).toFixed(1)}%</td><td>${r.price}${minibtn(r.code,'',r.price)}</td><td>${r.amount_亿}</td><td>${q&&q.price?(fmtp(ret)):'-'}</td>`))});
     c2.appendChild(tb);
   }
   if(ly.sell_signals&&ly.sell_signals.length){
     c2.appendChild(el('div','tier','🔴 卖出信号',0));
     ly.sell_signals.forEach(s=>c2.appendChild(el('div','sitem',`<div class="top"><span class="nm">${s.code}</span><span class="tag bad">卖出</span></div><div class="why">${s.why||''} · 收益 ${(s.ret!=null?fmtp(s.ret*100):'-')}</div>`)));
   }
-  if(!ly.buy_signal&&!(ly.buy_rank_top5||[]).length)c2.appendChild(el('div','study-note','燎原为长期低频战法，当日无新买入信号。',0));
+  if(!ly.buy_signal&&!(ly.buy_rank_top5||[]).length)c2.appendChild(el('div','study-note','燎原为长期低频战法,当日无新买入信号。',0));
   body.appendChild(c2);
-  /* —— 破晓(隔日超短) —— */
-  body.appendChild(el('div','tier','③ 破晓 · 隔日超短(买尾盘→卖T+1)'+(d._meta&&d._meta.poxiao?(' · 🕐 '+fmtTS(d._meta.poxiao)):''),0));
+  /* -- 破晓(隔日超短) -- */
+  body.appendChild(el('div','tier','3 破晓 · 隔日超短(买尾盘→卖T+1)'+(d._meta&&d._meta.poxiao?(' · 🕐 '+fmtTS(d._meta.poxiao)):''),0));
   const c3=el('div','card');
   const px=d.poxiao||{};
-  if(px.scene)c3.appendChild(el('div','banner info','场景门控：'+px.scene+(px.strategy?(' · '+px.strategy):''),0));
+  if(px.scene)c3.appendChild(el('div','banner info','场景门控:'+px.scene+(px.strategy?(' · '+px.strategy):''),0));
   if(px.recs&&px.recs.length){
     const tb=el('table','',`<tr><th>顺位</th><th>标的</th><th>档</th><th>价</th><th>预测高开</th><th>最新</th></tr>`);
-    px.recs.forEach(r=>{const ret=retOf(d,r.code,r.price);const q=(d.ret||{})[String(r.code).slice(-6)];tb.appendChild(el('tr','',`<td>${r.order}</td><td>${r.name||r.code}</td><td>${r.tag}</td><td>${r.price}</td><td class="${retCls(r.pred_gap)}">+${r.pred_gap}%</td><td>${q&&q.price?fmtp(ret):'-'}</td>`))});
+    px.recs.forEach(r=>{const ret=retOf(d,r.code,r.price);const q=(d.ret||{})[String(r.code).slice(-6)];tb.appendChild(el('tr','',`<td>${r.order}</td><td>${r.name||r.code}${bp(r.code)}${minibtn(r.code,r.name,r.price)}</td><td>${r.tag}</td><td>${r.price}</td><td class="${retCls(r.pred_gap)}">+${r.pred_gap}%</td><td>${q&&q.price?fmtp(ret):'-'}</td>`))});
     c3.appendChild(tb);
-    c3.appendChild(el('div','study-note',(px.recs[0]&&px.recs[0].sell_rule?('操作：'+px.recs[0].sell_rule):''),0));
-  }else c3.appendChild(el('div','study-note','当日破晓无推荐（隔日短线，低迷场景或空仓）。',0));
+    c3.appendChild(el('div','study-note',(px.recs[0]&&px.recs[0].sell_rule?('操作:'+px.recs[0].sell_rule):''),0));
+  }else c3.appendChild(el('div','study-note','当日破晓无推荐(隔日短线,低迷场景或空仓)。',0));
   body.appendChild(c3);
-  /* —— 打新 —— */
-  body.appendChild(el('div','tier','④ 打新 · 新股申购'+(d._meta&&d._meta.daxin?(' · 🕐 '+fmtTS(d._meta.daxin)):''),0));
+  /* -- 打新 -- */
+  body.appendChild(el('div','tier','4 打新 · 新股申购'+(d._meta&&d._meta.daxin?(' · 🕐 '+fmtTS(d._meta.daxin)):''),0));
   const c4=el('div','card');
   const dx=d.daxin||{};
   let any=false;
@@ -290,7 +355,8 @@ function renderStrategies(d, body){
 function renderReview(d, body){
   body.innerHTML='';
   body.appendChild(el('h3','','⚡ 快速复盘 · '+d.date,0));
-  body.appendChild(el('div','card',`场景：<span class="scene-tag" style="font-size:13px">${d.scene&&d.scene.name||'待定'}</span>　当日方向：${(d.zhixing||{}).summary||'-'}`,0));
+  body.appendChild(el('div','card',`场景:<span class="scene-tag" style="font-size:13px">${d.scene&&d.scene.name||'待定'}</span> 当日方向:${(d.zhixing||{}).summary||'-'}`,0));
+  if(!authed){body.appendChild(lockCard('登录查看复盘明细'));return}
   const rows=[];let totR=0,nR=0;
   const collate=(label,code,name,refPrice,extra)=>{
     if(!refPrice)return;
@@ -301,13 +367,13 @@ function renderReview(d, body){
   ((d.liaoyuan||{}).buy_rank_top5||[]).forEach(r=>collate('燎原',r.code,'',r.price,'池'+'' ));
   if((d.liaoyuan||{}).buy_signal)collate('燎原',d.liaoyuan.buy_signal.code,'',d.liaoyuan.buy_signal.price,'买入信号');
   /* 表 */
-  body.appendChild(sectH3('📈 推荐日后表现（最新价 vs 推荐价）', d, 'ret'));
+  body.appendChild(sectH3('📈 推荐日后表现(最新价 vs 推荐价)', d, 'ret'));
   if(rows.length){
     rows.sort((a,b)=>a.refPrice-b.refPrice);
     const tb=el('table','',`<tr><th>战法</th><th>标的</th><th>推荐价</th><th>最新价</th><th>收益</th></tr>`);
-    rows.forEach(r=>{const q=(d.ret||{})[String(r.code).slice(-6)];tb.appendChild(el('tr','',`<td>${r.label}</td><td>${r.name||r.code}</td><td>${r.refPrice}</td><td>${q&&q.price?q.price:'-'}</td><td class="${r.ret!=null?retCls(r.ret):'flat'}">${r.ret!=null?fmtp(r.ret):'-'}</td>`))});
+    rows.forEach(r=>{const q=(d.ret||{})[String(r.code).slice(-6)];tb.appendChild(el('tr','',`<td>${r.label}</td><td>${r.name||r.code}${bp(r.code)}</td><td>${r.refPrice}</td><td>${q&&q.price?q.price:'-'}</td><td class="${r.ret!=null?retCls(r.ret):'flat'}">${r.ret!=null?fmtp(r.ret):'-'}</td>`))});
     body.appendChild(tb);
-    if(nR)body.appendChild(el('div','card',`当日 <b>${rows.length}</b> 只推荐 · 有最新价 ${nR} 只 · 平均收益 <b class="${retCls(totR/nR)}">${fmtp(totR/nR)}</b>${totR>=0?'（含未达平均的）':''}`,0));
+    if(nR)body.appendChild(el('div','card',`当日 <b>${rows.length}</b> 只推荐 · 有最新价 ${nR} 只 · 平均收益 <b class="${retCls(totR/nR)}">${fmtp(totR/nR)}</b>${totR>=0?'(含未达平均的)':''}`,0));
   }else body.appendChild(el('div','study-note','当日无推荐可复盘。',0));
   /* 破晓对账(已实际执行) */
   const rc=(d.poxiao||{}).reconcile||[];
@@ -329,6 +395,7 @@ function renderToday(){renderEnv(DAYS[DATE_LIST[TODAYI]],$('envBody'));renderStr
 function fillReviewSel(){const s=$('rvDate');if(!s)return;s.innerHTML='';DATE_LIST.forEach((d,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=d;s.appendChild(o)});s.value='0'}
 /* ===== Tab ===== */
 function showTab(t){
+  CUR=t;
   document.querySelectorAll('#navTabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   ['today','strategy','history','review','about'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==t));
   if(t==='today')renderToday();
@@ -340,19 +407,20 @@ function showTab(t){
 /* ===== 关于 ===== */
 function renderAbout(){
   const b=$('aboutBody');b.innerHTML='';
-  b.appendChild(el('h3','','ℹ️ 关于',0));
+  b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.1</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.2</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
-    内容来自体系每日自动产出：观星场景预测 · SDM<b>四级</b>板块（一级板块→二级子板块→三级申万行业→四级个股）· 四战法推荐（指星/燎原/破晓/打新）· 持仓操作建议 · 共振方向。<br><br>
-    账号：与「语之境界」闯关站 <b>同一套邮箱登录</b>。<br>
+    内容来自体系每日自动产出：观星场景预测 · SDM<b>四级</b>板块（一级板块→二级子板块→三级申万行业→四级个股）· 四战法推荐（指星/燎原/破晓/打新）· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
+    账号：与「语之境界」闯关站 <b>同一套邮箱登录</b>；<b>未登录仅见场景与板块概览，登录后解锁完整推荐与持仓</b>。<br>
     <span class="risk-chip">⚠️ 股市有风险，投资需谨慎</span>
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
-    ['v1.0.1','11-10','UI 打磨 · 版本记录时间线 · 全局风险提示「股市有风险，投资需谨慎」'],
+    ['v1.0.2','11-10','ETF 明细修复(强/弱板块列表) · 股票标注<b>名称+代码+板块类型</b>(沪/深主板·创业板·科创板·北交所·ETF) · 我的持仓<b>随账号云端独立</b> · 未登录<b>登录闸门</b>(仅见场景+板块概览)'],
+    ['v1.0.1','11-10','UI 打磨 · 版本记录时间线 · 全局风险提示「股市有风险，投资需谨慎」 · 每块更新时间到分钟'],
     ['v1.0.0','11-10','首版上线：场景预测 / SDM四级板块下钻 / 四大战法推荐池+理由+操作建议 / 历史回顾 / 快速复盘(推荐日后表现+破晓对账) / 与语之境界同账号登录'],
   ];
   const lg=el('div','card');
@@ -360,20 +428,20 @@ function renderAbout(){
   const vlog=lg.querySelector('.vlog');
   VERSIONS.forEach(([v,d,t])=>{vlog.appendChild(el('div','vrow',`<div class="vbadge">${v}</div><div class="vdate">${d}</div><div class="vtxt">${t}</div>`))});
   b.appendChild(lg);
-  b.appendChild(el('div','study-note','数据为每日收盘/盘前体系产物快照。复盘收益「自推荐价→最新价」，非实盘成交，仅供参考。<br><b style="color:var(--bad)">市场有风险，决策需谨慎，本记录不构成投资建议。</b>',0));
+  b.appendChild(el('div','study-note','数据为每日收盘/盘前体系产物快照。复盘收益「自推荐价→最新价」,非实盘成交,仅供参考。<br><b style="color:var(--bad)">市场有风险,决策需谨慎,本记录不构成投资建议。</b>',0));
 }
 /* ===== Auth (与语之境界同源) ===== */
 function initClient(){try{if(window.supabase)DB=supabase.createClient(SB_URL,SB_ANON)}catch(e){DB=null}}
 function openAuth(){$('authMsg').textContent='';$('authModal').classList.remove('hidden')}
 function closeAuth(){$('authModal').classList.add('hidden')}
-async function doLogout(){try{await DB.auth.signOut()}catch(e){}DBUSER=null;$('acctBtn').textContent='🔐 登录';toast&&toast('已退出')}
+async function doLogout(){try{await DB.auth.signOut()}catch(e){}DBUSER=null;authed=false;MYH=[];$('acctBtn').textContent='🔐 登录';toast&&toast('已退出');showTab(CUR)}
 function toast(m){const e=el('div','','');const x=el('div','banner info',m);e.appendChild(x);document.body.appendChild(e);setTimeout(()=>e.remove(),2200)}
-function applySession(ses){const u=ses&&ses.user;if(u){DBUSER=u;$('acctBtn').textContent='👤 '+(u.email||u.id.slice(0,6))}else{DBUSER=null;$('acctBtn').textContent='🔐 登录'}}
+async function applySession(ses){const u=ses&&ses.user;if(u){DBUSER=u;authed=true;$('acctBtn').textContent='👤 '+(u.email||u.id.slice(0,6));await loadHoldings();showTab(CUR)}else{DBUSER=null;authed=false;MYH=[];$('acctBtn').textContent='🔐 登录';showTab(CUR)}}
 function bindAuth(){
   $('acctBtn').onclick=()=>{DBUSER?doLogout():openAuth()};
   $('authClose').onclick=closeAuth;
   $('authLogin').onclick=async()=>{const e=$('authEmail').value.trim(),p=$('authPass').value;$('authMsg').textContent='';if(!e||!p){$('authMsg').textContent='请填写邮箱和密码';return}const{data,error}=await DB.auth.signInWithPassword({email:e,password:p});if(error){$('authMsg').textContent=error.message;return}closeAuth();applySession(data.session)};
-  $('authRegister').onclick=async()=>{const e=$('authEmail').value.trim(),p=$('authPass').value;$('authMsg').textContent='';if(!e||!p){$('authMsg').textContent='请填写邮箱和密码';return}if(p.length<6){$('authMsg').textContent='密码至少6位';return}const{data,error}=await DB.auth.signUp({email:e,password:p});if(error){$('authMsg').textContent=error.message;return}if(data.session){closeAuth();applySession(data.session)}else{$('authMsg').textContent='注册成功，请到邮箱确认后登录'}};
+  $('authRegister').onclick=async()=>{const e=$('authEmail').value.trim(),p=$('authPass').value;$('authMsg').textContent='';if(!e||!p){$('authMsg').textContent='请填写邮箱和密码';return}if(p.length<6){$('authMsg').textContent='密码至少6位';return}const{data,error}=await DB.auth.signUp({email:e,password:p});if(error){$('authMsg').textContent=error.message;return}if(data.session){closeAuth();applySession(data.session)}else{$('authMsg').textContent='注册成功,请到邮箱确认后登录'}};
 }
 function bindNav(){
   document.querySelectorAll('#navTabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
