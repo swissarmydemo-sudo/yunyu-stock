@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.7 (2026-11-10)
+     yunyu-stock · 语之策略 v1.0.8 (2026-11-10)
      数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
      分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
      登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
@@ -96,9 +96,9 @@ select{background:var(--card);color:var(--txt);border:1px solid var(--line);bord
   </div>
   <nav class="nav-tab" id="navTabs">
     <button data-tab="today">📅 今日</button>
+    <button data-tab="sdm">🧭 板块SDM</button>
     <button data-tab="strategy">🎯 推荐池</button>
     <button data-tab="watch">🎒 自选</button>
-    <button data-tab="sdm">🧭 板块SDM</button>
     <button data-tab="history">📜 历史</button>
     <button data-tab="review">⚡ 复盘</button>
     <button data-tab="about">i️ 关于</button>
@@ -511,7 +511,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.7</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.8</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -520,6 +520,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.8','11-10','板块SDM 调整为第2个Tab(今日→SDM→推荐池→自选→历史→复盘→关于)'],
     ['v1.0.7','11-10','ETF 主题方向独立成板块(第5栏), 不再挂在指星推荐下面(修 Frank 反馈) · 今日「我的操作建议」加完整跟踪去自选指针'],
     ['v1.0.6','11-10','操作建议改为<b>按每个账户自己的持仓/自选逐股生成</b>(主账号=自动对接真实持仓, 其他用户=手动自选), 每人不同; 指星目标价(操作区间)归入推荐池(普适); 未登录净屏只留场景+SDM'],
     ['v1.0.5','11-10','未登录净屏: 隐藏主仓方向状态机(买/卖/维持)、建仓冻结(槽位)、复盘当日方向、场景内部复盘备注 — 仅登录/主账号可见; 未登录只留场景+置信度+SDM+情绪闸门'],
