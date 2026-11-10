@@ -355,20 +355,8 @@ function l1For(d,h){
 function renderSdm(d){
   const b=$('sdmBody');b.innerHTML='';
   const date=d.date;
-  b.appendChild(sectH3('🗂️ 板块 SDM · '+date, d, 'sdm'));
-  const sdm=d.sdm||{};
-  const sd=el('div','card');
-  if(sdm.sectors_summary){const row=el('div','chips');Object.entries(sdm.sectors_summary).forEach(([k,v])=>{if(v)row.appendChild(el('span','chip',`${k} <b>${v}</b>`))});sd.appendChild(row);const hd=el('div','',`<div style="font-size:12px;color:var(--dim);margin:10px 0 2px">SDM 四级板块 · 一级板块(31)→二级子板块(131)→三级申万行业(305)→四级个股(326)。当日状态面板:</div>`);sd.insertBefore(hd,sd.firstChild);}
-  const sp=sdm.status_panel||{};
-  Object.keys(sp).forEach(g=>{
-    const items=sp[g]||[];if(!items.length)return;
-    sd.appendChild(el('div','tier',g,0));
-    items.slice(0,14).forEach(it=>sd.appendChild(el('div','sitem',`<div class="top"><span class="nm" style="color:${clsColor(it.sector)}">${it.sector}</span><span class="pill ${it.status.includes('空')?'v':(it.status.includes('上行')?'s':'w')}">${it.status}</span><span class="why">强度:${it.strength||'-'}</span></div>`)));
-    if(items.length>14)sd.appendChild(el('div','study-note',`...另有 ${items.length-14} 个板块(共 ${items.length})`,0));
-  });
-  if(!Object.keys(sp).length)sd.appendChild(el('div','study-note','当日 SDM 面板未生成。',0));
-  b.appendChild(sd);
-  b.appendChild(sectH3('🗂️ 四级板块树(下钻到个股)', d, 'sdm'));
+  b.appendChild(sectH3('🧭 板块 SDM · '+date, d, 'sdm'));
+  /* 2026-11-10 Frank: 状态面板与树重复且割裂 → 合并为单一趋势分组树(三层体系+驱动) */
   const tb=el('div','card');renderSdmTree(tb);b.appendChild(tb);
 }
 /* -- SDM 板块四级树下钻渲染 -- */
