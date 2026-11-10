@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.10 (2026-11-10)
+     yunyu-stock · 语之策略 v1.0.11 (2026-11-10)
      数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
      分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
      登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
@@ -319,23 +319,27 @@ function renderAutoH(cont,d,h,closed){
   cont.appendChild(el('div','sitem',`<div class="top"><span class="nm">${NM(h.name,h.code)}</span>${bp(h.code)}<span class="board">${h.strat||'指星'}</span>${h.acct?('<span class="pill">'+h.acct+'</span>'):''}${(h.shares||0)>0?('<span class="pill">'+h.shares+'股</span>'):''}${cost?('<span class="pill">买价 '+cost+'</span>'):''}${(!closed&&cur)?('<span class="pill">现价 '+cur+'</span>'):''}${(closed&&h.sell_price)?('<span class="pill ok">卖价 '+h.sell_price+'</span>'):''}${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}</div>${(advice&&!closed&&(h.shares||0)>0)?('<div class="why">💡 '+advice+'</div>'):''}${closed?('<div class="why">'+(h.sell_price?'已平仓 · 卖 '+h.sell_price+' · '+h.sell_time:'持仓已清零')+'</div>'):''}`));
 }
 function l1For(d,h){
-  const c=h.code;const z=d.zhixing||{};
-  /* 主账号主仓信号(仅 owner) */
+  const c=h.code;const z=d.zhixing||{};const strat=h.strat||'自选';
+  /* owner(真实仓/模拟仓): 受持有池份数影响的体系信号(买入/卖出/持有, 池满则无买入信号=天然池控) */
   if(isOwner()){
     const se=(z.sell||[]).find(x=>String(x.code).slice(-6)===c);
-    if(se)return (se.is_sim?'📈 模拟盘卖出信号:':'🔴 主仓卖出信号:')+((se).verdict||'按纪律离场')+' · '+stratDesc(h.strat||'指星')+'。';
+    if(se)return (se.is_sim?'📈 模拟盘卖出信号:':'🔴 主仓卖出信号:')+((se).verdict||'按纪律离场')+' · '+stratDesc(strat)+'。';
     const hd=(z.hold||[]).find(x=>String(x.code).slice(-6)===c);
-    if(hd)return (hd.is_sim?'👀 模拟盘持有:':'👀 主仓持有:')+((hd).verdict||'持有')+' · '+stratDesc(h.strat||'指星')+'。';
+    if(hd)return (hd.is_sim?'👀 模拟盘持有:':'👀 主仓持有:')+((hd).verdict||'持有')+' · '+stratDesc(strat)+'。';
+    const bu=(z.buy||[]).find(x=>String(x.code).slice(-6)===c);
+    if(bu)return (bu.is_sim?'📈 模拟盘·指星推荐买入':'🟢 指星今日推荐买入')+' · '+stratDesc(strat)+'。';
+    const px=(d.poxiao.recs||[]).find(x=>String(x.code).slice(-6)===c);
+    if(px)return '今日破晓在池:'+(px.name||c)+' · 预测高开+'+px.pred_gap+'% · '+(px.sell_rule||'T尾盘买、T1开盘卖')+'。';
+    const ly=(d.liaoyuan||{}).buy_rank_top5||[]; if(ly.some(x=>String(x.code).slice(-6)===c))return '今日燎原浓缩池在列 · 约持30天。';
+    /* owner 池状态影响: 燎原现金/份数 → 新买需池有空位 */
+    const lyo=d.liaoyuan||{};
+    if((''+strat).indexOf('燎原')>=0&&lyo.cash_left!=null)return '燎原 · 池现金 ¥'+lyo.cash_left+(lyo.funds?(' / '+lyo.funds+'份'):'')+' · 按L1状态机跟踪。';
+    return stratDesc(strat)+' 持仓跟踪中, 暂无该股新信号。';
   }
-  /* 普适战法信号(所有登录用户): 指星推荐买入 */
-  const bu=(z.buy||[]).find(x=>String(x.code).slice(-6)===c);
-  if(bu)return (bu.is_sim?'📈 模拟盘·指星推荐买入':'🟢 指星今日推荐买入')+' · '+stratDesc(h.strat||'指星')+'。';
-  /* 破晓在池 */
-  const px=(d.poxiao.recs||[]).find(x=>String(x.code).slice(-6)===c);
-  if(px)return '今日破晓在池:'+(px.name||c)+' · 预测高开+'+px.pred_gap+'% · '+(px.sell_rule||'T尾盘买、T1开盘卖')+'。';
-  /* 燎原在池 */
-  const ly=(d.liaoyuan||{}).buy_rank_top5||[]; if(ly.some(x=>String(x.code).slice(-6)===c))return '今日燎原浓缩池在列 · 约持30天。';
-  return stratDesc(h.strat||'自选')+' 持仓跟踪中, 暂无该股新信号。';
+  /* 其他用户: 买入后仅受对应战法 L1 状态机影响(不看任何持有池份数/owner体系信号) */
+  const L1={'指星':'指星 L1 状态机 · 按买点/持有/过顶卖/离场跟踪, 结合你的成本给止盈止损','燎原':'燎原 L1 状态机 · 约持30天, 硬扛不设止损, 按到期γ止损/状态机离场跟踪','破晓':'破晓 L1 状态机 · T尾盘买/T1开盘卖, 冲高+1%止盈 / -0.5%回撤卖','打新':'打新 L1 · 中签上市后卖出兑现','ETF':'ETF 方向跟踪 · 按板块强弱信号给方向参考'};
+  const base=(L1[strat]||(stratDesc(strat)+' · 按对应战法 L1 状态机跟踪'))+'。';
+  return base+' 你的'+strat+'持仓按 L1 状态机指导, 不依赖任何持有池份数。';
 }
 /* -- 板块 SDM(独立) -- */
 function renderSdm(d){
@@ -638,7 +642,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.10</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.11</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -647,6 +651,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.11','11-10','今日操作建议分人: 卖出/持仓信号只对当前用户自己登记的股票; owner 保留持有池份数影响的体系信号+真实仓/模拟仓两模块; 其他用户买入后仅按对应战法 L1 状态机指导(不受池份数影响); 非 owner 隐藏我仓位明细(现金/份数)'],
     ['v1.0.10','11-10','板块SDM 按趋势排序: 上行 → 对峙 → 下行 → 其他(每级都排, 板块名旁加趋势标签); 各Tab股票统一显示「名称+代码」'],
     ['v1.0.9','11-10','UI 整体优化: 配色层次+渐变标题+吸顶导航+卡片/列表质感+悬停反馈+滚动条/选中/键盘焦点; 修复输入框文字色变量错误'],
     ['v1.0.8','11-10','板块SDM 调整为第2个Tab(今日→SDM→推荐池→自选→历史→复盘→关于)'],
