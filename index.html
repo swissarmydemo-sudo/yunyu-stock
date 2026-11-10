@@ -165,7 +165,7 @@ const LANG_COLOR={};
 /* ===== Supabase (与语之境界同一账号) ===== */
 const SB_URL="https://ridzzptbvirtpunltucb.supabase.co";
 const SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpZHp6cHRidmlydHB1bmx0dWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQyMzQyNzAsImV4cCI6MjEwOTgxMDI3MH0.QF6IeeRRG4K5WlYh-Lj1X5YyMFg6vQyIK7Mrtimpnu4";
-let DB=null,DBUSER=null,authed=false,MYH=[],AUTOH=[],FB=[];
+let DB=null,DBUSER=null,authed=false,MYH=[],AUTOH=[],SIH=[],SIMSUM={},FB=[];
 const HSTORE='stock_holdings';
 function $(id){return document.getElementById(id)}
 function el(t,c,h){const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e}
@@ -192,7 +192,7 @@ function boardOf(code){
 function bp(code){const b=boardOf(code);return b?`<span class="board">${b}</span>`:''}
 function minibtn(code,name,price,strat){const c=String(code).replace(/\D/g,'').slice(-6);if(!c||c.length!==6)return'';return`<span class="minibtn" onclick="addHolding('${c}','${String(name||'').replace(/'/g,'')}','${price||0}','${String(strat||'').replace(/'/g,'')}')">＋</span>`}
 /* -- 每账号持仓(云端) -- */
-async function loadHoldings(){MYH=[];AUTOH=[];FB=[];if(!(DB&&DBUSER))return;try{const{data}=await DB.from(HSTORE).select('data').eq('id',DBUSER.id).maybeSingle();const dd=data&&data.data;MYH=(dd&&dd.holdings)||[];AUTOH=(dd&&dd.auto_holdings)||[];FB=(dd&&dd.feedback)||[]}catch(e){MYH=[];AUTOH=[];FB=[]}}
+async function loadHoldings(){MYH=[];AUTOH=[];FB=[];if(!(DB&&DBUSER))return;try{const{data}=await DB.from(HSTORE).select('data').eq('id',DBUSER.id).maybeSingle();const dd=data&&data.data;MYH=(dd&&dd.holdings)||[];AUTOH=(dd&&dd.auto_holdings)||[];SIH=(dd&&dd.auto_holdings_sim)||[];SIMSUM=(dd&&dd.sim_summary)||{};FB=(dd&&dd.feedback)||[]}catch(e){MYH=[];AUTOH=[];FB=[]}}
 async function saveHoldings(){if(!(DB&&DBUSER))return;try{await DB.from(HSTORE).upsert({id:DBUSER.id,data:{holdings:MYH,auto_holdings:AUTOH,feedback:FB},updated_at:new Date().toISOString()},{onConflict:'id'})}catch(e){console.log(e)}}
 function addHolding(code,name,price,strat){
   if(!authed){openAuth();return}
@@ -258,6 +258,23 @@ function renderWatch(d){
       }
       b.appendChild(el('div','study-note','由体系每晚自动同步真实持仓(兴业/东财); 只读, 不受手动自选影响。',0));
     }else b.appendChild(el('div','study-note','体系尚未同步真实持仓(同步脚本未跑或今日无持仓)。',0));
+  }
+  /* 主账号模拟仓(东财100万模拟盘·只读) 2026-11-10 Frank: owner自选=真实仓+模拟仓两模块 */
+  if(isOwner()){
+    const ss=SIMSUM||{};
+    b.appendChild(el('div','tier','📈 模拟仓 · 东财100万模拟盘(只读)'+(ss.pos_count!=null?(' ('+ss.pos_count+'只)'):''),0));
+    if(ss.total_assets!=null)b.appendChild(el('div','study-note',`账户总资产 <b>${(ss.total_assets/10000).toFixed(2)}万</b> · 可用 ${(ss.avail_balance/10000).toFixed(2)}万 · 累计盈亏 <b class="${(+ss.total_pnl>=0?'ok':'bad')}">${(+ss.total_pnl>=0?'+':'')+(ss.total_pnl/10000).toFixed(2)}万</b>`));
+    const siOpen=SIH.filter(h=>(h.shares||0)>0);
+    if(siOpen.length){
+      const card=el('div','card');
+      siOpen.forEach(h=>{
+        const cost=h.cost||0,cur=h.price||0;
+        const pnl=(h.pnl_pct!=null)?h.pnl_pct:((cur&&cost)?((cur-cost)/cost*100):null);
+        card.appendChild(el('div','sitem',`<div class="top"><span class="nm">${NM(h.name,h.code)}</span>${bp(h.code)}<span class="board">${h.strat||'模拟盘'}</span><span class="pill">成本 ${cost}</span><span class="pill">现价 ${cur}</span><span class="pill">${h.shares}股</span>${(h.value!=null)?('<span class="pill">市值 '+h.value+'</span>'):''}${pnl!=null?('<span class="pill '+(pnl>=0?'ok':'bad')+'">'+fmtp(pnl)+'</span>'):''}</div>`));
+      });
+      b.appendChild(card);
+      b.appendChild(el('div','study-note','由体系每晚自动同步东财100万模拟盘持仓; 只读, 与真实仓/自选独立。',0));
+    }else b.appendChild(el('div','study-note','模拟盘当前空仓。',0));
   }
   /* 手动自选 */
   b.appendChild(el('div','tier','📌 我的自选 · 手动跟踪',0));
@@ -674,7 +691,7 @@ function openAuth(){$('authMsg').textContent='';$('authModal').classList.remove(
 function closeAuth(){$('authModal').classList.add('hidden')}
 async function doLogout(){try{await DB.auth.signOut()}catch(e){}DBUSER=null;authed=false;MYH=[];$('acctBtn').textContent='🔐 登录';toast&&toast('已退出');showTab(CUR)}
 function toast(m){const e=el('div','','');const x=el('div','banner info',m);e.appendChild(x);document.body.appendChild(e);setTimeout(()=>e.remove(),2200)}
-async function applySession(ses){const u=ses&&ses.user;if(u){DBUSER=u;authed=true;$('acctBtn').textContent='👤 '+(u.email||u.id.slice(0,6));await loadHoldings();showTab(CUR)}else{DBUSER=null;authed=false;MYH=[];AUTOH=[];$('acctBtn').textContent='🔐 登录';showTab(CUR)}}
+async function applySession(ses){const u=ses&&ses.user;if(u){DBUSER=u;authed=true;$('acctBtn').textContent='👤 '+(u.email||u.id.slice(0,6));await loadHoldings();showTab(CUR)}else{DBUSER=null;authed=false;MYH=[];AUTOH=[];SIH=[];SIMSUM={};$('acctBtn').textContent='🔐 登录';showTab(CUR)}}
 function bindAuth(){
   $('acctBtn').onclick=()=>{DBUSER?doLogout():openAuth()};
   $('authClose').onclick=closeAuth;
