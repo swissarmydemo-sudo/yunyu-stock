@@ -120,6 +120,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <button data-tab="watch">🎒 自选</button>
     <button data-tab="history">📜 历史</button>
     <button data-tab="review">⚡ 复盘</button>
+    <button data-tab="feedback">💬 建议</button>
     <button data-tab="about">i️ 关于</button>
   </nav>
 
@@ -137,6 +138,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <div id="strategyBodyH"></div>
   </div>
   <div id="tab-review" class="hidden"><div id="reviewBody"></div></div>
+  <div id="tab-feedback" class="hidden"><div id="feedbackBody"></div></div>
   <div id="tab-about" class="hidden"><div id="aboutBody"></div></div>
   <div class="footer-note">⚠️ <b>股市有风险,投资需谨慎</b> · 本站内容均为你个人量化研究体系之记录,仅供研究参考,<b>不构成任何投资建议</b>。</div>
 </div>
@@ -162,7 +164,7 @@ const LANG_COLOR={};
 /* ===== Supabase (与语之境界同一账号) ===== */
 const SB_URL="https://ridzzptbvirtpunltucb.supabase.co";
 const SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpZHp6cHRidmlydHB1bmx0dWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQyMzQyNzAsImV4cCI6MjEwOTgxMDI3MH0.QF6IeeRRG4K5WlYh-Lj1X5YyMFg6vQyIK7Mrtimpnu4";
-let DB=null,DBUSER=null,authed=false,MYH=[],AUTOH=[];
+let DB=null,DBUSER=null,authed=false,MYH=[],AUTOH=[],FB=[];
 const HSTORE='stock_holdings';
 function $(id){return document.getElementById(id)}
 function el(t,c,h){const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e}
@@ -188,8 +190,8 @@ function boardOf(code){
 function bp(code){const b=boardOf(code);return b?`<span class="board">${b}</span>`:''}
 function minibtn(code,name,price,strat){const c=String(code).replace(/\D/g,'').slice(-6);if(!c||c.length!==6)return'';return`<span class="minibtn" onclick="addHolding('${c}','${String(name||'').replace(/'/g,'')}','${price||0}','${String(strat||'').replace(/'/g,'')}')">＋</span>`}
 /* -- 每账号持仓(云端) -- */
-async function loadHoldings(){MYH=[];AUTOH=[];if(!(DB&&DBUSER))return;try{const{data}=await DB.from(HSTORE).select('data').eq('id',DBUSER.id).maybeSingle();const dd=data&&data.data;MYH=(dd&&dd.holdings)||[];AUTOH=(dd&&dd.auto_holdings)||[]}catch(e){MYH=[];AUTOH=[]}}
-async function saveHoldings(){if(!(DB&&DBUSER))return;try{await DB.from(HSTORE).upsert({id:DBUSER.id,data:{holdings:MYH,auto_holdings:AUTOH},updated_at:new Date().toISOString()},{onConflict:'id'})}catch(e){console.log(e)}}
+async function loadHoldings(){MYH=[];AUTOH=[];FB=[];if(!(DB&&DBUSER))return;try{const{data}=await DB.from(HSTORE).select('data').eq('id',DBUSER.id).maybeSingle();const dd=data&&data.data;MYH=(dd&&dd.holdings)||[];AUTOH=(dd&&dd.auto_holdings)||[];FB=(dd&&dd.feedback)||[]}catch(e){MYH=[];AUTOH=[];FB=[]}}
+async function saveHoldings(){if(!(DB&&DBUSER))return;try{await DB.from(HSTORE).upsert({id:DBUSER.id,data:{holdings:MYH,auto_holdings:AUTOH,feedback:FB},updated_at:new Date().toISOString()},{onConflict:'id'})}catch(e){console.log(e)}}
 function addHolding(code,name,price,strat){
   if(!authed){openAuth();return}
   const c=String(code).replace(/\D/g,'').slice(-6);if(c.length!==6){toast('代码无效');return}
@@ -580,13 +582,14 @@ function fillReviewSel(){const s=$('rvDate');if(!s)return;s.innerHTML='';DATE_LI
 function showTab(t){
   CUR=t;
   document.querySelectorAll('#navTabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
-  ['today','strategy','watch','sdm','history','review','about'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==t));
+  ['today','strategy','watch','sdm','history','review','feedback','about'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==t));
   if(t==='today')renderToday();
   if(t==='strategy')renderToday();
   if(t==='watch')renderWatch(DAYS[DATE_LIST[TODAYI]]);
   if(t==='sdm')renderSdm(DAYS[DATE_LIST[TODAYI]]);
   if(t==='history'){HISTI=DATE_LIST.length-1;fillHistSel();renderHist()}
   if(t==='review'){renderReview(DAYS[DATE_LIST[0]],$('reviewBody'));fillReviewSel();const sel=$('rvDate');if(sel)sel.onchange=()=>renderReview(DAYS[DATE_LIST[+sel.value]],$('reviewBody'))}
+  if(t==='feedback')renderFeedback();
   if(t==='about')renderAbout();
 }
 /* ===== 关于 ===== */
@@ -621,6 +624,25 @@ function renderAbout(){
   VERSIONS.forEach(([v,d,t])=>{vlog.appendChild(el('div','vrow',`<div class="vbadge">${v}</div><div class="vdate">${d}</div><div class="vtxt">${t}</div>`))});
   b.appendChild(lg);
   b.appendChild(el('div','study-note','数据为每日收盘/盘前体系产物快照。复盘收益「自推荐价→最新价」,非实盘成交,仅供参考。<br><b style="color:var(--bad)">市场有风险,决策需谨慎,本记录不构成投资建议。</b>',0));
+}
+/* ===== 意见和建议 · 提交给体系 ===== */
+function renderFeedback(){
+  const b=$('feedbackBody');b.innerHTML='';
+  b.appendChild(el('h3','','💬 意见和建议',0));
+  b.appendChild(el('div','study-note','对本股票站 / 量化体系的改进意见, 直接提交即可; 我会定期查看并跟进更新。描述建议按「哪个页·哪块 · 什么问题 · 你期望的效果」来写, 便于我定位。<br>示例: 「今日tab 破晓的卖没同步, 期望开盘卖昨日买入的票显示进来」。',0));
+  if(!authed){b.appendChild(lockCard('登录后提交意见'));return}
+  const c=el('div','card');
+  c.appendChild(el('div','tier','✍️ 提交新意见',0));
+  c.appendChild(el('div','',`<textarea id="fbTxt" rows="3" class="fld" placeholder="例: 今日tab 破晓卖没同步, 期望开盘卖昨日买入的票..." style="width:100%;resize:vertical;font-family:inherit"></textarea>`));
+  c.appendChild(el('div','',`<button class="btn" id="fbGo" style="width:100%;margin-top:8px">提交意见</button>`));
+  b.appendChild(c);
+  if(FB&&FB.length){
+    b.appendChild(el('div','tier','📜 我的历史意见 ('+FB.length+')',0));
+    const lc=el('div','card');
+    [...FB].reverse().slice(0,40).forEach(f=>lc.appendChild(el('div','sitem',`<div class="top"><span class="nm">${(f.time||'').slice(0,16)||'—'}</span><span class="pill ${f.status==='done'?'ok':''}">${f.status==='done'?'✅已处理':(f.status==='doing'?'🔄处理中':'待处理')}</span></div><div class="why">${String(f.content||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>`)));
+    b.appendChild(lc);
+  }else b.appendChild(el('div','study-note','你还没有提交过意见。',0));
+  setTimeout(()=>{const g=$('fbGo');if(g)g.onclick=()=>{const v=$('fbTxt').value.trim();if(!v){toast('请先填写意见');return}const now=new Date().toISOString().slice(0,16).replace('T',' ');FB.push({content:v,time:now,status:'open'});saveHoldings().then(()=>{toast('已提交, 谢谢!');renderFeedback()})}},0);
 }
 /* ===== Auth (与语之境界同源) ===== */
 function initClient(){try{if(window.supabase)DB=supabase.createClient(SB_URL,SB_ANON)}catch(e){DB=null}}
