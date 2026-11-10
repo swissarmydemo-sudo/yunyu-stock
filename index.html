@@ -16,7 +16,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{background:radial-gradient(1300px 760px at 18% -12%,#20294d 0%,#12172e 46%,#0b0e1e 100%);color:var(--txt);font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;min-height:100vh;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-.wrap{max-width:1060px;margin:0 auto;padding:18px 16px 76px}
+.wrap{max-width:1060px;margin:0 auto;padding:18px 16px 140px}
 h1{font-size:23px;letter-spacing:.5px;line-height:1.25;background:linear-gradient(120deg,#fff,#ffe3b8 55%,var(--gold2));-webkit-background-clip:text;background-clip:text;color:transparent}
 h1 small{color:var(--dim);font-weight:400;letter-spacing:.2px;font-size:12px;display:block;margin-top:5px;-webkit-text-fill-color:var(--dim)}
 .topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px}
@@ -803,18 +803,7 @@ function showTab(t){
 /* ===== 关于 ===== */
 function renderAbout(){
   const b=$('aboutBody');b.innerHTML='';
-  b.appendChild(el('h3','','i️ 关于',0));
-  b.appendChild(el('div','card','',0));
-  const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.26</b></div>
-    <div style="font-size:13px;color:var(--dim);line-height:1.7">
-    你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
-    内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
-    账号:与「语之境界」闯关站 <b>同一套邮箱登录</b>;<b>未登录仅见场景与板块概览,登录后解锁完整推荐与持仓</b>。<br>
-    <span class="risk-chip">⚠️ 股市有风险,投资需谨慎</span>
-    </div>`;
-  b.appendChild(el('h3','','📜 版本历史',0));
-  const VERSIONS=[
+    const VERSIONS=[
     ['v1.0.28','11-10','战法槽位可视化+SDM覆盖: ①自选&复盘共用「槽位网格」——每战法3槽(持仓🟩/空槽⬜待买入)+机动资金🟡显式2份, 真实/模拟独立算+资金; ②复盘SDM未覆盖修复——持仓个股无三级下钻时兜底到申万板块级SDM(板块链趋势+驱动), 不再显示「未覆盖」'],
     ['v1.0.27','11-10','修复复盘场景卡「当日方向」排版: 不再把 zhixing.summary 一行糊死(买/卖/补/日期/代码挤一块), 按 / 拆段成彩色pill分行展示——买🟢绿/卖🔴红/补📌中性, 场景卡更清爽(场景标签改flex行,修复高pill与下方「当日方向」重叠)'],
     ['v1.0.26','11-10','主账号「战法槽位 · 资金」面板(owner专属·其他用户两Tab零改动): 自选Tab=完整版(真实/模拟独立算·空槽位显式展示·每战法3槽建仓+机动弹药<strong>指星/燎原各2份</strong>口径), 复盘Tab=紧凑条; 资金显示=真实盘(兴业/东财增量/燎原池现金)+模拟可用(东财100万); cron联动: 破晓14:50任务末尾挂站同步(推完即aggregate+build+deploy, 原14:56/14:54独立cron停用)'],  
@@ -845,7 +834,19 @@ function renderAbout(){
     ['v1.0.1','11-10','UI 打磨 · 版本记录时间线 · 全局风险提示「股市有风险,投资需谨慎」 · 每块更新时间到分钟'],
     ['v1.0.0','11-10','首版上线:场景预测 / SDM四级板块下钻 / 四大战法推荐池+理由+操作建议 / 历史回顾 / 快速复盘(推荐日后表现+破晓对账) / 与语之境界同账号登录'],
   ];
-  const lg=el('div','card');
+
+  b.appendChild(el('h3','','i️ 关于',0));
+  b.appendChild(el('div','card','',0));
+  const headCard=b.querySelector('.card');
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">${VERSIONS[0][0]}</b></div>
+    <div style="font-size:13px;color:var(--dim);line-height:1.7">
+    你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
+    内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
+    账号:与「语之境界」闯关站 <b>同一套邮箱登录</b>;<b>未登录仅见场景与板块概览,登录后解锁完整推荐与持仓</b>。<br>
+    <span class="risk-chip">⚠️ 股市有风险,投资需谨慎</span>
+    </div>`;
+  b.appendChild(el('h3','','📜 版本历史',0));
+const lg=el('div','card');
   lg.appendChild(el('div','vlog','',0));
   const vlog=lg.querySelector('.vlog');
   VERSIONS.forEach(([v,d,t])=>{vlog.appendChild(el('div','vrow',`<div class="vbadge">${v}</div><div class="vdate">${d}</div><div class="vtxt">${t}</div>`))});
