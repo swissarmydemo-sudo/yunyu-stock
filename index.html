@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>语之策略 · A股每日战法推荐与复盘</title>
 <!-- ================================================
-     yunyu-stock · 语之策略 v1.0.18 (2026-11-10)
+     yunyu-stock · 语之策略 v1.0.19 (2026-11-10)
      数据: 量化体系每日产物(场景/SDM/四战法推荐池/自选跟踪)
      分层: 推荐池普适(所有登录用户同看) · 个股操作建议仅主账号(frankdyuan@petalmail.com)
      登录: 与「语之境界」同套 Supabase 账号; 自选 stock_holdings 云端独立
@@ -138,7 +138,14 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <div id="envBodyH"></div>
     <div id="strategyBodyH"></div>
   </div>
-  <div id="tab-review" class="hidden"><div id="reviewBody"></div></div>
+  <div id="tab-review" class="hidden">
+    <div class="datebar">
+      <button class="btn ghost" id="rvPrev">← 前一日</button>
+      <select id="rvDate"></select>
+      <button class="btn ghost" id="rvNext">后一日 →</button>
+    </div>
+    <div id="reviewBody"></div>
+  </div>
   <div id="tab-feedback" class="hidden"><div id="feedbackBody"></div></div>
   <div id="tab-about" class="hidden"><div id="aboutBody"></div></div>
   <div class="footer-note">⚠️ <b>股市有风险,投资需谨慎</b> · 本站内容均为你个人量化研究体系之记录,仅供研究参考,<b>不构成任何投资建议</b>。</div>
@@ -716,7 +723,8 @@ function renderHist(show){if(show==null||show===true){renderEnv(DAYS[DATE_LIST[H
 let TODAYI=DATE_LIST.length-1;
 function renderToday(){renderEnv(DAYS[DATE_LIST[TODAYI]],$('envBody'));renderStrategies(DAYS[DATE_LIST[TODAYI]],$('strategyBody'))}
 /* ===== 复盘选择器 ===== */
-function fillReviewSel(){const s=$('rvDate');if(!s)return;s.innerHTML='';DATE_LIST.forEach((d,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=d;s.appendChild(o)});s.value=String(DATE_LIST.length-1)}
+function fillReviewSel(){const s=$('rvDate');if(!s)return;s.innerHTML='';DATE_LIST.forEach((d,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=d;s.appendChild(o)});s.value=String(RVI)}
+let RVI=DATE_LIST.length-1;
 /* ===== Tab ===== */
 function showTab(t){
   CUR=t;
@@ -727,7 +735,7 @@ function showTab(t){
   if(t==='watch')renderWatch(DAYS[DATE_LIST[TODAYI]]);
   if(t==='sdm')renderSdm(DAYS[DATE_LIST[TODAYI]]);
   if(t==='history'){HISTI=DATE_LIST.length-1;fillHistSel();renderHist()}
-  if(t==='review'){renderReview(DAYS[DATE_LIST[DATE_LIST.length-1]],$('reviewBody'));fillReviewSel();const sel=$('rvDate');if(sel)sel.onchange=()=>renderReview(DAYS[DATE_LIST[+sel.value]],$('reviewBody'))}
+  if(t==='review'){RVI=DATE_LIST.length-1;fillReviewSel();renderReview(DAYS[DATE_LIST[RVI]],$('reviewBody'));const sel=$('rvDate');if(sel)sel.onchange=()=>{RVI=+$('rvDate').value;renderReview(DAYS[DATE_LIST[RVI]],$('reviewBody'))}}
   if(t==='feedback')renderFeedback();
   if(t==='about')renderAbout();
 }
@@ -737,7 +745,7 @@ function renderAbout(){
   b.appendChild(el('h3','','i️ 关于',0));
   b.appendChild(el('div','card','',0));
   const headCard=b.querySelector('.card');
-  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.18</b></div>
+  headCard.innerHTML=`<div style="font-size:15px;font-weight:700;margin-bottom:6px">语之策略 <b style="color:var(--gold)">v1.0.19</b></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
     你的 A 股量化体系「御龙诀·观星」的每日盘面看板。<br>
     内容来自体系每日自动产出:观星场景预测 · SDM<b>四级</b>板块(一级板块→二级子板块→三级申万行业→四级个股)· 四战法推荐(指星/燎原/破晓/打新)· 每账号独立持仓 · ETF方向 · 快速复盘。<br><br>
@@ -746,6 +754,7 @@ function renderAbout(){
     </div>`;
   b.appendChild(el('h3','','📜 版本历史',0));
   const VERSIONS=[
+    ['v1.0.19','11-10','复盘Tab补上日期选择条(前一曰/后一日+下拉, 与历史Tab同款): 之前JS有rvDate逻辑但HTML没放选择器, 复盘只能看最新一天'],
     ['v1.0.18','11-10','持仓复盘加每只走势分析(依托SDM板块体系: 个股驱动+一级二级三级板块链+状态标记), 每晚快照同步写入; 每晚23:30给每用户生成当日持仓复盘快照; 主账号挂入32篇历史深度复盘; 修复save覆盖后端字段'],
     ['v1.0.17','11-10','复盘升级: 每晚给每用户生成当日持仓复盘快照daily_reviews(默认读快照, 无快照才估算); 主账号挂入历史深度复盘索引'],
     ['v1.0.16','11-10','修复复盘Tab默认停在最早一天(10-23): 改为默认最新交易日; 复盘日期选择器同步默认最新'],
@@ -849,6 +858,8 @@ function bindNav(){
   $('histPrev').onclick=()=>{if(HISTI>0){HISTI--;fillHistSel();renderHist()}};
   $('histNext').onclick=()=>{if(HISTI<DATE_LIST.length-1){HISTI++;fillHistSel();renderHist()}};
   $('histDate').onchange=()=>{HISTI=+$('histDate').value;renderHist()};
+  $('rvPrev').onclick=()=>{if(RVI>0){RVI--;fillReviewSel();renderReview(DAYS[DATE_LIST[RVI]],$('reviewBody'))}};
+  $('rvNext').onclick=()=>{if(RVI<DATE_LIST.length-1){RVI++;fillReviewSel();renderReview(DAYS[DATE_LIST[RVI]],$('reviewBody'))}};
 }
 async function init(){
   initClient();bindAuth();bindNav();
