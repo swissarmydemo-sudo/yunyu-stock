@@ -867,9 +867,12 @@ function paintPlan(body,d){
   const p=d.plan||{};
   body.appendChild(el('h3','','🗂 研究计划 '+(d.generated?'':'')+' <span style="font-weight:400;font-size:11px;color:var(--dim)">课题队列 · 更新时间 '+((p.updated_at||'').slice(0,10)||'')+'</span>'));
   if(p.current) body.appendChild(el('div','card',`<div style="font-size:12px;color:var(--dim)">当前进行</div><div style="font-weight:700;margin-top:2px">${p.current}</div>`));
-  // topics(优先级课题)
-  const tops=(p.topics||[]);
-  if(tops.length){ body.appendChild(el('h4','','▍优先课题')); const c=el('div','card'); tops.forEach(t=>{ c.appendChild(el('div','row',`<span class="chip" style="background:${t.priority==='high'?'var(--gold)':t.priority==='medium'?'var(--accent)':'var(--line)'};color:${t.priority==='high'?'#000':'var(--txt)'}">${t.priority||'low'}</span><b style="flex:1">${t.name}</b><span class="chip">${t.status||''}</span>`)); }); body.appendChild(c); }
+  // topics(优先课题) —— 只看 进行中/待做, 已完成收起(2026-11-11 Frank: done不该在优先列表)
+  const doneStatus=['done','decided','closed','converged','abandoned'];
+  const isOpen=(it)=>{const s=(it.status||'queued').split('(')[0].trim();return !doneStatus.includes(s)};
+  const tops=(p.topics||[]).filter(isOpen);
+  const topDone=(p.topics||[]).length-tops.length;
+  if(tops.length){ body.appendChild(el('h4','','▍优先课题 <span style="font-weight:400;color:var(--dim);font-size:11px">'+tops.length+' 项在推进'+(topDone?' · '+topDone+' 项已完成收起':'')+'</span>')); const c=el('div','card'); tops.forEach(t=>{ const prio=t.priority||'low'; const pc=prio==='high'?'#f2a25c':(prio==='medium'?'#6fb3f0':'#c3cbe6'); const pt=prio==='high'?'#231505':(prio==='medium'?'#0a243f':'#3a446e'); const st=(t.status||'queued'); const stc=st==='in_progress'?'#12a193':'var(--dim)'; c.appendChild(el('div','',`<div style="padding:7px 0;border-bottom:1px solid var(--line)"><div class="row" style="gap:6px"><span class="chip" style="background:${pc};color:${pt};font-weight:700;font-size:11px">${prio}</span><span class="chip" style="color:${stc};font-size:11px">● ${st}</span></div><div style="font-size:13px;font-weight:600;padding-top:5px;line-height:1.45">${t.name}</div></div>`)); }); body.appendChild(c); }
   // queue 按状态分组
   const g={};
   (p.queue||[]).forEach(it=>{ const k=(it.status||'queued'); (g[k]=g[k]||[]).push(it); });
