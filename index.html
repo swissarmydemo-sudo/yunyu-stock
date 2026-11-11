@@ -829,6 +829,16 @@ function renderResearch(){
   const d=RSH;
   // 分区：研究报告 / 研究计划
   const seg=el('div','');
+  // 📊 研究成果全景置顶卡(登录可见)
+  if(d.pinned && d.pinned.items && d.pinned.items.length){
+    const pc=el('div','card'); pc.style.marginBottom='10px'; pc.style.border='1px solid var(--accent)';
+    const ph=el('div',`row`,'<b style="font-size:14px">📊 '+(d.pinned.title||'研究成果全景')+'</b><span style="color:var(--dim);font-size:11px;margin-left:8px">'+(d.pinned.date||'')+'</span>');
+    pc.appendChild(ph);
+    const pl=el('div','','<div style="font-size:12px;color:var(--dim);padding:2px 0 6px">'+((d.pinned.note||''))+'</div>');
+    d.pinned.items.forEach(x=>{ pl.appendChild(el('div','','<div style="font-size:12.5px;padding:2px 0;border-bottom:1px dashed var(--line)">'+x+'</div>')); });
+    pc.appendChild(pl);
+    seg.appendChild(pc);
+  }
   seg.appendChild(el('div',`row g`,'<b style="font-size:15px">📚 研究</b><span style="color:var(--dim);font-size:12px;margin-left:8px">共 '+d.count+' 份研报 · 生成 '+d.generated+'</span>'));
   const tabs=el('div','row',`<button class="btn ghost" data-seg="report" style="flex:1">📄 研究报告</button><button class="btn ghost" data-seg="plan" style="flex:1">🗂 研究计划</button>`);
   seg.appendChild(tabs);
