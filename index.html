@@ -133,6 +133,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <button data-tab="watch">🎒 自选</button>
     <button data-tab="history">📜 历史</button>
     <button data-tab="review">⚡ 复盘</button>
+    <button data-tab="research">📚 研究</button>
     <button data-tab="feedback">💬 建议</button>
     <button data-tab="about">i️ 关于</button>
   </nav>
@@ -158,6 +159,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     </div>
     <div id="reviewBody"></div>
   </div>
+  <div id="tab-research" class="hidden"><div id="researchBody"></div></div>
   <div id="tab-feedback" class="hidden"><div id="feedbackBody"></div></div>
   <div id="tab-about" class="hidden"><div id="aboutBody"></div></div>
   <div class="footer-note">⚠️ <b>股市有风险,投资需谨慎</b> · 本站内容均为你个人量化研究体系之记录,仅供研究参考,<b>不构成任何投资建议</b>。</div>
@@ -804,15 +806,73 @@ let RVI=DATE_LIST.length-1;
 function showTab(t){
   CUR=t;
   document.querySelectorAll('#navTabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
-  ['today','strategy','watch','sdm','history','review','feedback','about'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==t));
+  ['today','strategy','watch','sdm','history','review','research','feedback','about'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==t));
   if(t==='today')renderToday();
   if(t==='strategy')renderToday();
   if(t==='watch')renderWatch(DAYS[DATE_LIST[TODAYI]]);
   if(t==='sdm')renderSdm(DAYS[DATE_LIST[TODAYI]]);
   if(t==='history'){HISTI=DATE_LIST.length-1;fillHistSel();renderHist()}
   if(t==='review'){RVI=DATE_LIST.length-1;fillReviewSel();renderReview(DAYS[DATE_LIST[RVI]],$('reviewBody'));const sel=$('rvDate');if(sel)sel.onchange=()=>{RVI=+$('rvDate').value;renderReview(DAYS[DATE_LIST[RVI]],$('reviewBody'))}}
+  if(t==='research')renderResearch();
   if(t==='feedback')renderFeedback();
   if(t==='about')renderAbout();
+}
+/* ===== 研究 ===== */
+let RSH=null, RSHQ=false, RSHfilt='';
+function renderResearch(){
+  const b=$('researchBody'); b.innerHTML='';
+  if(!authed){ b.appendChild(lockCard('研究报告与研究计划仅对注册用户开放。登录即可浏览全部 964 份研报 + 课题队列与决策记录。')); return; }
+  if(!RSH){
+    if(!RSHQ){ RSHQ=true; b.appendChild(el('div','',`<div style="padding:30px;text-align:center;color:var(--dim)">📚 加载研究数据…</div>`)); fetch('research.json',{cache:'no-store'}).then(r=>r.json()).then(_d=>{RSH=_d;renderResearch()}).catch(e=>{b.innerHTML='';b.appendChild(el('div','card',`<div style="padding:20px;color:var(--bad)">加载失败：${e}</div>`))}); }
+    return;
+  }
+  const d=RSH;
+  // 分区：研究报告 / 研究计划
+  const seg=el('div','');
+  seg.appendChild(el('div',`row g`,'<b style="font-size:15px">📚 研究</b><span style="color:var(--dim);font-size:12px;margin-left:8px">共 '+d.count+' 份研报 · 生成 '+d.generated+'</span>'));
+  const tabs=el('div','row',`<button class="btn ghost" data-seg="report" style="flex:1">📄 研究报告</button><button class="btn ghost" data-seg="plan" style="flex:1">🗂 研究计划</button>`);
+  seg.appendChild(tabs);
+  const body=el('div','');
+  seg.appendChild(body);
+  b.appendChild(seg);
+  let cur='report';
+  const paint=()=>{ body.innerHTML=''; if(cur==='report') paintReports(body,d); else paintPlan(body,d); };
+  tabs.querySelectorAll('button').forEach(bt=>bt.onclick=()=>{ cur=bt.dataset.seg; tabs.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===bt)); paint(); });
+  paint();
+}
+function paintPlan(body,d){
+  const p=d.plan||{};
+  body.appendChild(el('h3','','🗂 研究计划 '+(d.generated?'':'')+' <span style="font-weight:400;font-size:11px;color:var(--dim)">课题队列 · 更新时间 '+((p.updated_at||'').slice(0,10)||'')+'</span>'));
+  if(p.current) body.appendChild(el('div','card',`<div style="font-size:12px;color:var(--dim)">当前进行</div><div style="font-weight:700;margin-top:2px">${p.current}</div>`));
+  // topics(优先级课题)
+  const tops=(p.topics||[]);
+  if(tops.length){ body.appendChild(el('h4','','▍优先课题')); const c=el('div','card'); tops.forEach(t=>{ c.appendChild(el('div','row',`<span class="chip" style="background:${t.priority==='high'?'var(--gold)':t.priority==='medium'?'var(--accent)':'var(--line)'};color:${t.priority==='high'?'#000':'var(--txt)'}">${t.priority||'low'}</span><b style="flex:1">${t.name}</b><span class="chip">${t.status||''}</span>`)); }); body.appendChild(c); }
+  // queue 按状态分组
+  const g={};
+  (p.queue||[]).forEach(it=>{ const k=(it.status||'queued'); (g[k]=g[k]||[]).push(it); });
+  const stOrder=['in_progress','queued','done','decided','closed','cancelled'];
+  body.appendChild(el('h4','','▍课题队列 ('+((p.queue||[]).length)+')'));
+  const qc=el('div','card');
+  stOrder.forEach(s=>{ const items=g[s]||[]; if(!items.length)return; qc.appendChild(el('div','','<div style="font-weight:700;color:var(--dim);font-size:12px;margin:8px 0 4px">'+s+' · '+items.length+'</div>')); items.slice(0,40).forEach(it=>{ const det=it.desc||it.origin||it.id; qc.appendChild(el('div','',`<div style="padding:4px 0 8px"><div class="row">${it.priority?`<span class="chip">${it.priority}</span>`:''}<b style="flex:1">${it.name}</b>${it.converged?'<span class="chip" style="color:var(--good)">✓收敛</span>':''}</div>${det?`<div style="font-size:12px;color:var(--dim)">${det}</div>`:''}</div>`)); }); if(items.length>40)qc.appendChild(el('div','','<div style="font-size:12px;color:var(--dim)">…共 '+items.length+' 条</div>')); });
+  body.appendChild(qc);
+  // 决策
+  const de=p.decisions||[];
+  if(de.length){ body.appendChild(el('h4','','▍近期决策 ('+de.length+')')); const dc=el('div','card'); de.forEach(x=>{ dc.appendChild(el('div','',`<div class="row"><span class="chip">${x.ts||''}</span><span style="font-size:11px;color:var(--dim)">${x.who||''}</span><span class="chip">${x.type||''}</span></div><div style="font-size:12.5px;margin-top:2px">${x.decision||''}</div>`)); }); body.appendChild(dc); }
+}
+function paintReports(body,d){
+  const reps=d.reports||[];
+  const top=el('div','row g');
+  const inp=document.createElement('input'); inp.type='text'; inp.className='auth-input'; inp.placeholder='🔍 搜研报标题/关键字 (964份)'; inp.value=RSHfilt;
+  top.appendChild(inp);
+  body.appendChild(top);
+  body.appendChild(el('div','card','<div style="padding:2px 0 10px;font-size:12px;color:var(--dim)">研究报告 · 全部按日期倒序 · 近期含摘要</div>'));
+  const L=el('div','');
+  body.appendChild(L);
+  const kw=RSHfilt.trim().toLowerCase();
+  let n=0;
+  reps.forEach((r)=>{ if(kw && !(r.title.toLowerCase().includes(kw)||(r.digest||'').toLowerCase().includes(kw))) return; n++; const date=r.date||''; const item=el('div','',`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span style="font-size:11px;color:var(--dim)">${date}</span><span class="chip">${r.cat||''}</span><b style="flex:1;font-size:13px">${r.title}</b></div>`); if(r.digest){ const det=el('div','','<div style="font-size:12px;color:var(--dim);padding:2px 0 8px">'+r.digest+'</div>'); item.appendChild(det); } L.appendChild(item); if(n>=200){ body.appendChild(el('div','','<div style="padding:20px;text-align:center;color:var(--dim);font-size:12px">已显示前 200 条，请用上方搜索框精确定位</div>')); return; } });
+  if(!n) L.appendChild(el('div','','<div style="padding:20px;text-align:center;color:var(--dim)">无匹配</div>'));
+  inp.oninput=()=>{ RSHfilt=inp.value; paintReports(body,d); };
 }
 /* ===== 关于 ===== */
 function renderAbout(){
