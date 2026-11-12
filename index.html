@@ -698,7 +698,8 @@ function renderStrategies(d, body){
   }else ce.appendChild(el('div','study-note','当日无 ETF 主题方向。',0));
   body.appendChild(ce);
   /* -- 今日目标 · 操作区间(指星目标价·普适推荐) -- */
-  body.appendChild(el('div','tier','🎯 今日目标 · 操作区间(指星目标价)',0));
+  body.appendChild(el('div','tier','🎯 指星 · 今日择机买入区间（L2择机）',0));
+  body.appendChild(el('div','study-note','指星为 L2 择机买入：下方为当日「买入区间」与止损，<b>不是止盈目标价</b>；实际进场按盘中监控的 L2 择机信号确认。',0));
   const opt=el('div','card');
   (d.ops||[]).forEach(t=>{
     const code6=String(t.code||'').replace(/\D/g,'').slice(-6);
