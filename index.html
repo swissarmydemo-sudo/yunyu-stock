@@ -977,7 +977,7 @@ const lg=el('div','card');
 function renderFeedback(){
   const b=$('feedbackBody');b.innerHTML='';
   b.appendChild(el('h3','','💬 意见和建议',0));
-  b.appendChild(el('div','study-note','对本股票站 / 量化体系的改进意见, 直接提交即可; 我会定期查看并跟进更新。描述建议按「哪个页·哪块 · 什么问题 · 你期望的效果」来写, 便于我定位。<br>示例: 「今日tab 破晓的卖没同步, 期望开盘卖昨日买入的票显示进来」。',0));
+  b.appendChild(el('div','study-note','对本股票站 / 量化体系的改进意见, 直接提交即可; 我会定期查看并跟进更新。描述建议按「哪个页·哪块 · 什么问题 · 你期望的效果」来写, 便于我定位。<br>示例: 「今日tab 破晓的卖没同步, 期望开盘卖昨日买入的票显示进来」。<br><b>提交后可在下方「我的历史意见」实时查看处理进度(已提交→处理中→已处理)与处理说明。</b>',0));
   if(!authed){b.appendChild(lockCard('登录后提交意见'));return}
   const c=el('div','card');
   c.appendChild(el('div','tier','✍️ 提交新意见',0));
@@ -987,7 +987,18 @@ function renderFeedback(){
   if(FB&&FB.length){
     b.appendChild(el('div','tier','📜 我的历史意见 ('+FB.length+')',0));
     const lc=el('div','card');
-    [...FB].reverse().slice(0,40).forEach(f=>lc.appendChild(el('div','sitem',`<div class="top"><span class="nm">${(f.time||'').slice(0,16)||'—'}</span><span class="pill ${f.status==='done'?'ok':''}">${f.status==='done'?'✅已处理':(f.status==='doing'?'🔄处理中':'待处理')}</span></div><div class="why">${String(f.content||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>`)));
+    const _esc=s=>String(s||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+    const _stp=(n,txt,on,col)=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11.5px;white-space:nowrap;${on?`background:${col}1f;color:${col};font-weight:600;border:1px solid ${col}66`:'background:transparent;color:#9aa;border:1px solid #dde'}">${n} ${txt}</span>`;
+    const _arr=on=>`<span style="color:${on?'#2a9d8f':'#ccc'};font-size:12px">›</span>`;
+    [...FB].reverse().slice(0,40).forEach(f=>{
+      const st=f.status||'open';
+      const c2=(st==='doing'||st==='done'), c3=(st==='done');
+      let h=`<div class="top"><span class="nm">${_esc((f.time||'').slice(0,16))||'—'}</span><span class="pill ${st==='done'?'ok':''}">${st==='done'?'✅已处理':(st==='doing'?'🔄处理中':'⏳待处理')}</span></div>`;
+      h+=`<div class="why">${_esc(f.content)}</div>`;
+      h+=`<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:9px">${_stp('①','已提交',true,'#2a9d8f')}${_arr(c2)}${_stp('②','处理中',c2,'#e9a23b')}${_arr(c3)}${_stp('③','已处理',c3,'#2a9d8f')}</div>`;
+      if(f.note||f.handled_at){h+=`<div style="margin-top:8px;padding:7px 11px;border-left:3px solid #2a9d8f;background:rgba(42,157,143,.08);border-radius:6px;font-size:12.5px;line-height:1.55"><b>📝 处理反馈：</b>${_esc(f.note||'已处理')}${f.handled_at?`<span style="color:#999;margin-left:6px">（${_esc((f.handled_at||'').slice(0,16))}）</span>`:''}</div>`}
+      lc.appendChild(el('div','sitem',h));
+    });
     b.appendChild(lc);
   }else b.appendChild(el('div','study-note','你还没有提交过意见。',0));
   setTimeout(()=>{const g=$('fbGo');if(g)g.onclick=()=>{const v=$('fbTxt').value.trim();if(!v){toast('请先填写意见');return}const now=new Date().toISOString().slice(0,16).replace('T',' ');FB.push({content:v,time:now,status:'open'});saveHoldings().then(()=>{toast('已提交, 谢谢!');renderFeedback()})}},0);
