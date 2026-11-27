@@ -149,6 +149,12 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .ddgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(186px,1fr));gap:10px}
 .ddrc{background:linear-gradient(180deg,var(--s1),var(--s2));border:1px solid var(--line);border-radius:16px;padding:12px;transition:.16s}
 .ddrc:hover{border-color:var(--line2);transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.3)}
+
+.ddrc{position:relative}
+.ddrc.sel{border-color:#ffc76e;box-shadow:0 0 0 1px #ffc76e inset}
+.ddcmpbtn{position:absolute;top:8px;right:8px;font-size:14px;opacity:.3;cursor:pointer;padding:2px 5px;line-height:1;z-index:2}
+.ddcmpbtn:hover{opacity:1}
+.ddcmpbtn.on{opacity:1;color:#ffc76e}
 </style>
 <style id="adaptive-theme">
 html{color-scheme:light dark}
@@ -898,13 +904,19 @@ function showTab(t){
 }
 /* ===== 研究 ===== */
 let RSH=null, RSHQ=false, RSHfilt='', RSHtheme='';
-let DDD=null,DDQ='',DDVIEW='radar',DDBEN=null;
+let DDD=null,DDQ='',DDVIEW='radar',DDBEN=null,DDCMP=[];
 function ddBenchFor(s){
   if(!DDBEN||!DDBEN.bench||!s.identity)return null;
   const l2=s.identity.parent||s.identity.l3;
   const b=DDBEN.bench[l2];
   if(!b)return null;
   return [b.profit,b.growth,b.value,b.safety,b.boom,b.mom];
+}
+function ddToggleCmp(code){
+  const i=DDCMP.indexOf(code);
+  if(i>=0)DDCMP.splice(i,1);
+  else{if(DDCMP.length>=2)DDCMP.shift();DDCMP.push(code);}
+  renderDDRadar();
 }
 function ddLoadBench(cb){
   if(DDBEN)return cb&&cb();
@@ -984,6 +996,31 @@ function ddScoreVals(s){
   }
   return [['盈利',Math.round(profit)],['成长',Math.round(growth)],['估值',Math.round(value)],['安全',Math.round(safety)],['景气',Math.round(boom)],['动量',Math.round(mom)]];
 }
+function ddRadarMulti(list,size,bench){
+  size=size||240;const cx=size/2,cy=size/2,R=size/2-30;
+  const vals=ddScoreVals(list[0]);
+  const N=vals.length;
+  const pt=(i,rr)=>{const a=-Math.PI/2+i*2*Math.PI/N;return [cx+rr*Math.cos(a),cy+rr*Math.sin(a)]};
+  let g='';
+  [0.25,0.5,0.75,1].forEach(f=>{
+    const ps=vals.map((_,i)=>pt(i,R*f).map(v=>v.toFixed(1)).join(',')).join(' ');
+    g+='<polygon points="'+ps+'" fill="none" stroke="rgba(242,162,92,'+(f===1?0.4:0.15)+')" stroke-width="1"/>';
+  });
+  vals.forEach((_,i)=>{const p=pt(i,R);g+='<line x1="'+cx+'" y1="'+cy+'" x2="'+p[0].toFixed(1)+'" y2="'+p[1].toFixed(1)+'" stroke="rgba(242,162,92,.14)" stroke-width="1"/>'});
+  if(bench&&bench.length===N){
+    const bp=bench.map((v,i)=>pt(i,R*(Math.max(2,Math.min(100,v))/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
+    g+='<polygon points="'+bp+'" fill="rgba(154,163,199,.06)" stroke="rgba(154,163,199,.55)" stroke-width="1.2" stroke-dasharray="3,3"/>';
+  }
+  const cols=[['#ffc76e','rgba(255,199,110,.20)'],['#5ad9e8','rgba(90,217,232,.18)']];
+  list.slice(0,2).forEach((s,si)=>{
+    const vv=ddScoreVals(s);
+    const dp=vv.map((d,i)=>pt(i,R*(d[1]/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
+    g+='<polygon points="'+dp+'" fill="'+cols[si][1]+'" stroke="'+cols[si][0]+'" stroke-width="2" stroke-linejoin="round"/>';
+    vv.forEach((d,i)=>{const p=pt(i,R*(d[1]/100));g+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.8" fill="'+cols[si][0]+'"/>'});
+  });
+  vals.forEach((d,i)=>{const p=pt(i,R+16);g+='<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+3).toFixed(1)+'" font-size="11" fill="#9aa3c7" text-anchor="middle">'+d[0]+'</text>'});
+  return '<svg viewBox="0 0 '+size+' '+size+'" style="width:100%;max-width:'+size+'px;height:auto;display:block;margin:0 auto">'+g+'</svg>';
+}
 function ddRadar(s,size,bench){
   size=size||150;const cx=size/2,cy=size/2,R=size/2-24;
   const vals=ddScoreVals(s);
@@ -1016,22 +1053,47 @@ function renderDDRadar(){
   if(!list.length){b.innerHTML='<div class="card" style="padding:20px;color:var(--dim)">无匹配</div>';return}
   function rOrd(rt){return rt.indexOf('禁入')>=0?0:rt.indexOf('关注')>=0?1:2}
   list.sort((a,c2)=>rOrd(c2.rating||'')-rOrd(a.rating||''));
+  if(DDCMP.length){
+    const objs=DDCMP.map(c=>(DDD.stocks||[]).find(x=>x.code===c)).filter(Boolean);
+    if(objs.length){
+      const box=document.createElement('div');box.className='card';
+      const bv=ddBenchFor(objs[0]);
+      box.innerHTML='<div class="row" style="justify-content:space-between"><b>⚖ 双票对比</b><span class="v" style="cursor:pointer" id="ddCmpClear">清除 ✕</span></div>'
+        +'<div class="row" style="justify-content:center;gap:18px;font-size:12.5px;margin:6px 0">'
+        +objs.map((o,i)=>'<span><b style="color:'+(i?'#5ad9e8':'#ffc76e')+'">●</b> '+o.name+'</span>').join('')
+        +'</div>'+ddRadarMulti(objs,240,bv)
+        +'<div class="v" style="text-align:center;font-size:11.5px;margin-top:4px">黄=第一只 · 青=第二只 · 灰虚线=同板块中位</div>';
+      b.appendChild(box);
+      setTimeout(()=>{const cl=$('ddCmpClear');if(cl)cl.onclick=()=>{DDCMP=[];renderDDRadar()}},0);
+    }
+  }
   const grid=document.createElement('div');grid.className='ddgrid';
   list.slice(0,40).forEach(s=>{
     const rc=ddRateCls(s.rating||'');
     const vals=ddScoreVals(s);
     const avg=Math.round(vals.reduce((t,v)=>t+v[1],0)/6);
-    const card=document.createElement('div');card.className='ddrc';
+    const sel=DDCMP.indexOf(s.code)>=0;
+    const card=document.createElement('div');card.className='ddrc'+(sel?' sel':'');
     card.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><b style="font-size:14px">'+s.name+'</b> <span class="v" style="font-size:11px">'+s.code+'</span></div><span class="ddrate '+rc+'" style="font-size:11px;padding:2px 8px">'+(s.rating||'').replace('正常','')+'</span></div>'
       +'<div style="margin:6px 0">'+ddRadar(s,150,ddBenchFor(s))+'</div>'
       +'<div style="text-align:center;font-size:11.5px;color:var(--dim)">综合 <b style="color:'+(avg>=70?'var(--ok)':avg>=50?'#ffc76e':'var(--bad)')+';font-size:14px">'+avg+'</b>/100</div>'
       +'<div style="text-align:center;font-size:11px;color:var(--dim);margin-top:3px">'+(s.identity&&s.identity.sw1||'')+' · 市值'+((s.identity&&s.identity.cap_yi)||'?')+'亿</div>';
+    const cbtn=document.createElement('span');cbtn.className='ddcmpbtn'+(sel?' on':'');cbtn.textContent='⚖';cbtn.title='加入对比';
+    cbtn.onclick=(e)=>{e.stopPropagation();ddToggleCmp(s.code)};
+    card.appendChild(cbtn);
     card.onclick=()=>{DDVIEW='card';document.querySelectorAll('.ddview').forEach(x=>x.classList.toggle('on',x.dataset.v==='card'));DDQ=s.code;const si=$('ddSearch');if(si)si.value=s.code;renderDDList()};
     card.style.cursor='pointer';
     grid.appendChild(card);
   });
   b.appendChild(grid);
-  const info=document.createElement('div');info.style.cssText='color:var(--dim);font-size:12px;padding:8px 2px';info.textContent='盈利(ROE)/成长(净利同比)/估值(PE)/安全(质押)/景气(SDM板块)/动量(20·60日) · 🟡实线=本股 · ⚪虚线=同板块中位 · 点卡片看详情';b.appendChild(info);
+  const info=document.createElement('div');info.style.cssText='color:var(--dim);font-size:12px;padding:8px 2px';info.textContent='盈利(ROE)/成长(净利同比)/估值(PE)/安全(质押)/景气(SDM板块)/动量(20·60日) · 🟡实线=本股 · ⚪虚线=同板块中位 · 点卡片看详情 · 点 ⚖ 选两只对比';b.appendChild(info);
+}
+function ddDiffCell(s,idx){
+  const bv=ddBenchFor(s);if(!bv)return '<span class="v">-</span>';
+  const sv=ddScoreVals(s);
+  const d=Math.round(sv[idx][1]-bv[idx]);
+  if(d===0)return '<span class="v">0</span>';
+  return '<b class="'+(d>0?'up':'dn')+'">'+(d>0?'+':'')+d+'</b>';
 }
 function renderDDMatrix(){
   const b=$('ddBody');if(!b||!DDD)return;
@@ -1046,7 +1108,7 @@ function renderDDMatrix(){
   const rank={x:0,y:1,z:2}; // 禁入/关注/正常 order
   function rOrd(rt){return rt.indexOf('禁入')>=0?0:rt.indexOf('关注')>=0?1:2}
   list.sort((a,c2)=>rOrd(c2.rating||'')-rOrd(a.rating||''));
-  let tb='<table class="ddt"><thead><tr><th>股票</th><th>板块</th><th>市场画像</th><th>主营业务</th><th>收入构成</th><th style="white-space:nowrap">财务</th><th>质押</th><th>风险</th></tr></thead><tbody>';
+  let tb='<table class="ddt"><thead><tr><th>股票</th><th>板块</th><th>市场画像</th><th>主营业务</th><th>收入构成</th><th style="white-space:nowrap">财务</th><th>质押</th><th style="white-space:nowrap">景气差</th><th style="white-space:nowrap">动量差</th><th>风险</th></tr></thead><tbody>';
   list.slice(0,80).forEach(s=>{
     const rt=s.rating||'';const rc=ddRateCls(rt);
     const idy=s.identity||{};
@@ -1068,6 +1130,8 @@ function renderDDMatrix(){
       +'<td class="v" style="white-space:nowrap">'+comp+'</td>'
       +'<td style="white-space:nowrap">'+finT+'</td>'
       +'<td style="white-space:nowrap;text-align:center">'+plg+'</td>'
+      +'<td style="white-space:nowrap;text-align:center">'+ddDiffCell(s,4)+'</td>'
+      +'<td style="white-space:nowrap;text-align:center">'+ddDiffCell(s,5)+'</td>'
       +'<td style="white-space:nowrap">'+risk+'</td>'
       +'</tr>';
   });
