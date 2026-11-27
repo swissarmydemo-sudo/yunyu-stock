@@ -954,21 +954,29 @@ let POLD=null;
 function ddScoreVals(s){
   const fin=s.financial||{}, pl=s.pledge||{}, comp=s.compliance||{};
   const roe=fin.roe, yoy=fin.np_yoy, pe=fin.pe, pr=pl.ratio;
+  // 基本面4维
   const profit = roe==null?50 : roe>=15?100 : roe>=10?80 : roe>=5?60 : roe>=0?40 : 10;
   const growth = yoy==null?50 : yoy>=50?100 : yoy>=20?80 : yoy>=0?60 : yoy>=-20?40 : 15;
   const value  = pe==null?50 : (pe<=0?15 : pe<=15?100 : pe<=25?80 : pe<=40?60 : pe<=60?40 : 20);
-  const safety = pr==null?70 : pr<=0?100 : pr<10?85 : pr<20?70 : pr<30?50 : pr<50?25 : 10;
+  // 安全: 质押反向, 状态类风险一票压低
   const bad=(comp['失信被执行']||0)+(comp['股权冻结']||0)+(comp['破产重整']||0)+(comp['经营异常']||0);
-  const pen=comp['行政处罚']||0;
-  const compliance = bad>0?20 : pen>0?60 : 100;
-  const n=(s.concepts||[]).length+(s.categories||[]).length;
-  const heat = n>=6?100 : n>=4?80 : n>=2?60 : n>=1?40 : 20;
-  return [['盈利',profit],['成长',growth],['估值',value],['安全',safety],['合规',compliance],['热度',heat]];
+  let safety = pr==null?70 : pr<=0?100 : pr<10?85 : pr<20?70 : pr<30?50 : pr<50?25 : 10;
+  if(bad>0)safety=Math.min(safety,25);
+  // 景气: SDM板块景气分 -6~+9 → 0~100
+  const sc=s.sentiment;
+  const boom = sc==null?50 : Math.max(2,Math.min(100,Math.round((sc+6)/15*100)));
+  // 动量: r20(60%)+r60(40%) → 0~100
+  let mom=50;
+  if(s.r20!=null||s.r60!=null){
+    const m=0.6*(s.r20!=null?s.r20:0)+0.4*(s.r60!=null?s.r60:0);
+    mom=Math.max(5,Math.min(100,Math.round(50+m*2.2)));
+  }
+  return [['盈利',Math.round(profit)],['成长',Math.round(growth)],['估值',Math.round(value)],['安全',Math.round(safety)],['景气',Math.round(boom)],['动量',Math.round(mom)]];
 }
 function ddRadar(s,size){
   size=size||150;const cx=size/2,cy=size/2,R=size/2-24;
   const vals=ddScoreVals(s);
-  const pt=(i,rr)=>{const a=-Math.PI/2+i*Math.PI/3;return [cx+rr*Math.cos(a),cy+rr*Math.sin(a)]};
+  const N=vals.length;const pt=(i,rr)=>{const a=-Math.PI/2+i*2*Math.PI/N;return [cx+rr*Math.cos(a),cy+rr*Math.sin(a)]};
   let g='';
   [0.25,0.5,0.75,1].forEach(f=>{
     const ps=vals.map((_,i)=>pt(i,R*f).map(v=>v.toFixed(1)).join(',')).join(' ');
@@ -1007,7 +1015,7 @@ function renderDDRadar(){
     grid.appendChild(card);
   });
   b.appendChild(grid);
-  const info=document.createElement('div');info.style.cssText='color:var(--dim);font-size:12px;padding:8px 2px';info.textContent='六维: 盈利(ROE) / 成长(净利同比) / 估值(PE) / 安全(质押) / 合规(风险事件) / 热度(概念) · 点击查看详情';b.appendChild(info);
+  const info=document.createElement('div');info.style.cssText='color:var(--dim);font-size:12px;padding:8px 2px';info.textContent='盈利(ROE) / 成长(净利同比) / 估值(PE) / 安全(质押+风险) / 景气(SDM板块) / 动量(20·60日) · 点击看详情';b.appendChild(info);
 }
 function renderDDMatrix(){
   const b=$('ddBody');if(!b||!DDD)return;
