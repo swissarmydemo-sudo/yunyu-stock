@@ -134,6 +134,17 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .politem.l3{border-left-color:var(--bad)}
 .politem.l2{border-left-color:#ffc76e}
 .politem.l1{border-left-color:var(--dim)}
+
+.ddwrap{overflow-x:auto;margin-top:2px;border-radius:14px;border:1px solid var(--line);background:var(--card)}
+.ddt{border-collapse:collapse;width:100%;font-size:12.5px;min-width:820px}
+.ddt th{position:sticky;top:0;background:var(--bg2);color:var(--dim);font-weight:600;text-align:left;padding:9px 11px;border-bottom:1px solid var(--line2);white-space:nowrap;z-index:1}
+.ddt td{padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.55}
+.ddt tbody tr:hover td{background:rgba(111,179,240,.05)}
+.ddt .v{color:var(--dim);font-size:12px}
+.ddt .up{color:var(--ok);font-weight:700}
+.ddt .dn{color:var(--bad);font-weight:700}
+.ddview{font-size:13px}
+.ddview.on{background:linear-gradient(150deg,#f0a25c,#df7f28);border-color:#ffc98a;color:#241403;font-weight:700}
 </style>
 <style id="adaptive-theme">
 html{color-scheme:light dark}
@@ -173,7 +184,11 @@ html{color-scheme:light dark}
   <div id="tab-watch" class="hidden"><div id="watchBody"></div></div>
   <div id="tab-sdm" class="hidden"><div id="sdmBody"></div></div>
   <div id="tab-dd" class="hidden">
-    <div class="card"><div class="row"><input id="ddSearch" placeholder="代码 / 名称 / 概念 模糊搜索, 如: 002768 / 国恩 / 华为" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--s3);color:var(--txt);font-size:14px"><span style="color:var(--dim);font-size:12px" id="ddCount"></span></div></div>
+    <div class="card"><div class="row">
+      <button class="btn ddview on" data-v="matrix" title="多维矩阵对比">📊 矩阵</button>
+      <button class="btn ddview" data-v="card" title="详情卡片">📋 详情</button>
+      <input id="ddSearch" placeholder="代码 / 名称 / 概念 搜索, 如 002768 / 国恩 / 华为" style="flex:1;min-width:180px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--s3);color:var(--txt);font-size:14px"><span style="color:var(--dim);font-size:12px;white-space:nowrap" id="ddCount"></span>
+    </div></div>
     <div id="ddBody"></div>
   </div>
   <div id="tab-policy" class="hidden"><div id="policyBody"></div></div>
@@ -878,10 +893,14 @@ function showTab(t){
 }
 /* ===== 研究 ===== */
 let RSH=null, RSHQ=false, RSHfilt='', RSHtheme='';
-let DDD=null,DDQ='';
+let DDD=null,DDQ='',DDVIEW='matrix';
+function ddSetView(v){DDVIEW=v;document.querySelectorAll('.ddview').forEach(b=>b.classList.toggle('on',b.dataset.v===v));renderDDList()}
+
 function renderDD(){
   const b=$('ddBody');if(!b)return;
   const si=$('ddSearch');if(si&&!si._dd){si._dd=1;si.oninput=()=>{DDQ=si.value;renderDDList()}}
+  if(!DDVIEW)DDVIEW='matrix';
+  document.querySelectorAll('.ddview').forEach(b=>{b.onclick=()=>ddSetView(b.dataset.v)});
   if(!authed){b.innerHTML='';b.appendChild(lockCard('登录后查看个股尽调档案'));return}
   if(!DDD){b.innerHTML='<div class="card" style="padding:30px;text-align:center;color:var(--dim)">🔍 加载尽调档案…</div>';
     fetch('dd_profiles.json',{cache:'no-store'}).then(r=>r.json()).then(d=>{DDD=d;renderDDList()}).catch(e=>{b.innerHTML='<div class="card" style="color:var(--bad)">加载失败：'+e+'</div>'});return}
@@ -890,6 +909,8 @@ function renderDD(){
 function ddRateCls(rt){return rt.indexOf('禁入')>=0?'bad':rt.indexOf('关注')>=0?'warn':'ok'}
 function renderDDList(){
   const b=$('ddBody');if(!b||!DDD)return;
+  if(DDVIEW==='matrix')return renderDDMatrix();
+  document.querySelectorAll('.ddview').forEach(x=>x.classList.toggle('on',x.dataset.v==='card'));
   const q=(DDQ||'').trim().toLowerCase();
   let list=DDD.stocks||[];
   if(q)list=list.filter(s=>s.code.includes(q)||(s.name||'').toLowerCase().includes(q)||(s.concepts||[]).join(',').toLowerCase().includes(q));
@@ -923,6 +944,50 @@ function renderDDList(){
   const info=document.createElement('div');info.style.cssText='color:var(--dim);font-size:12px;padding:8px 2px';info.textContent='更新于 '+(DDD.updated||'')+' · 数据: 天眼查/同花顺/东财/问财';b.appendChild(info);
 }
 let POLD=null;
+function renderDDMatrix(){
+  const b=$('ddBody');if(!b||!DDD)return;
+  const q=(DDQ||'').trim().toLowerCase();
+  let list=DDD.stocks||[];
+  if(q)list=list.filter(s=>s.code.includes(q)||(s.name||'').toLowerCase().includes(q)||(s.concepts||[]).join(',').toLowerCase().includes(q));
+  document.querySelectorAll('.ddview').forEach(x=>x.classList.toggle('on',x.dataset.v==='matrix'));
+  const cnt=$('ddCount');if(cnt)cnt.textContent=list.length+'/'+(DDD.stocks||[]).length+' 只';
+  b.innerHTML='';
+  if(!list.length){b.innerHTML='<div class="card" style="padding:20px;color:var(--dim)">无匹配。已收录 '+(DDD.stocks||[]).length+' 只</div>';return}
+  // 排序: 🟢优先, 再看同色市值
+  const rank={x:0,y:1,z:2}; // 禁入/关注/正常 order
+  function rOrd(rt){return rt.indexOf('禁入')>=0?0:rt.indexOf('关注')>=0?1:2}
+  list.sort((a,c2)=>rOrd(c2.rating||'')-rOrd(a.rating||''));
+  let tb='<table class="ddt"><thead><tr><th>股票</th><th>板块</th><th>市场画像</th><th>主营业务</th><th>收入构成</th><th style="white-space:nowrap">财务</th><th>质押</th><th>风险</th></tr></thead><tbody>';
+  list.slice(0,80).forEach(s=>{
+    const rt=s.rating||'';const rc=ddRateCls(rt);
+    const idy=s.identity||{};
+    const byP=(s.composition||[]).filter(x=>String(x.type||'').indexOf('按产品')===0).slice(0,2).map(x=>x.item+(x.ratio!=null?' '+x.ratio+'%':'')).join('<br>');
+    const byI=(s.composition||[]).filter(x=>String(x.type||'').indexOf('按行业')===0).slice(0,2).map(x=>x.item+(x.ratio!=null?' '+x.ratio+'%':'')).join('<br>');
+    const comp=byP||byI||'<span class="v">-</span>';
+    const fin=s.financial||{};
+    const npCn=(fin.np_yoy!=null&&fin.np_yoy>0)?'up':(fin.np_yoy!=null&&fin.np_yoy<0)?'dn':'v';
+    const roeCn=(fin.roe!=null&&fin.roe<0)?'dn':'v';
+    const finT='PE <b>'+(fin.pe!=null?fin.pe:'?')+'</b> · ROE <b class="'+roeCn+'">'+(fin.roe!=null?fin.roe+'%':'?')+'</b><br>净利 <b class="'+npCn+'">'+(fin.net_profit!=null?fin.net_profit:'?')+'亿 · '+((fin.np_yoy!=null&&fin.np_yoy>0)?'+':'')+(fin.np_yoy!=null?fin.np_yoy+'%':'?')+'</b>';
+    const plg=(s.pledge&&s.pledge.ratio!=null)?'<b class="'+(s.pledge.ratio>=30?'dn':'v')+'">'+s.pledge.ratio+'%</b>':'<span class="v">-</span>';
+    const risk=(s.flags&&s.flags.length)?'<span style="color:var(--bad)">'+s.flags.slice(0,2).join('<br>')+'</span>':'<span class="ok" style="color:var(--ok)">✓</span>';
+    const cats=(s.categories||[]).slice(0,2).map(x=>'<span class="cptag">'+x+'</span>').join('')||(s.concepts||[]).slice(0,2).map(x=>'<span class="cptag">'+x+'</span>').join('')||'<span class="v">-</span>';
+    tb+='<tr>'
+      +'<td style="white-space:nowrap"><b>'+s.name+'</b><div class="v">'+s.code+'</div></td>'
+      +'<td class="v" style="white-space:nowrap">'+(idy.sw1||'')+'<br>'+(idy.l3||'')+'</td>'
+      +'<td>'+cats+'</td>'
+      +'<td class="v" style="max-width:180px">'+String(s.main||'-').slice(0,44)+'</td>'
+      +'<td class="v" style="white-space:nowrap">'+comp+'</td>'
+      +'<td style="white-space:nowrap">'+finT+'</td>'
+      +'<td style="white-space:nowrap;text-align:center">'+plg+'</td>'
+      +'<td style="white-space:nowrap">'+risk+'</td>'
+      +'</tr>';
+  });
+  tb+='</tbody></table>';
+  const wrap=document.createElement('div');wrap.className='ddwrap';
+  wrap.innerHTML=tb;b.appendChild(wrap);
+  const info=document.createElement('div');info.style.cssText='color:var(--dim);font-size:12px;padding:8px 2px';info.textContent='展示前'+Math.min(list.length,80)+'只 · 更新于 '+(DDD.updated||'');b.appendChild(info);
+}
+
 function renderPolicy(){
   const b=$('policyBody');if(!b)return;
   if(!authed){b.innerHTML='';b.appendChild(lockCard('登录后查看政策新闻动向'));return}
